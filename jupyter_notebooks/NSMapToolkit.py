@@ -1,65 +1,115 @@
 import numpy as np
 import numpy.linalg as la
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from modelSystems import *
 
+# Simple function which takes a time series with shape (n,) and return it with
+# mean 0 and standard deviation 1
+#   Parameters
+#       x - 
 def standardize(x):
     return (x - np.mean(x, axis=0, where=np.isfinite(x))) / np.std(x, axis=0, where=np.isfinite(x))
 
-# create a delay embeddding vector from a given UNIVARIATE time series.
-def delayEmbed(D, predHorizon, nLags, embInterval, t = None, removeNAs=True):
+# Create a delay embeddding vector from a given UNIVARIATE time series.
+#   Parameters
+#       D - a univariate time series with vector shape (n,)
+#       predHorizon - number of steps ahead to predict
+#       E - number of columns in training data matrix X
+#       tau - number of steps between each column
+#       t (optional) - if sampling is non-uniform, then specify the time
+#                      of each training data point, standardized between 0 and 1,
+#                      a correctly embedded version of t will also be returned
+#       removeNAs (optional) - if true, then remove all rows with null value
+#   Returns
+#       (X, Y) - (training data matrix of shape (n-tau*E, E), target values of shape (n, 1))
+#           OR
+#       (X, Y, t) - (training data matrix of shape (n-tau*E, E),
+#                    target values of shape (n, 1),
+#                    time vector updated correctly)
+def delayEmbed(D, E, tau, t = None, removeNAs=True):
     
-    totalRows = D.shape[0] + predHorizon + embInterval * nLags
-    A = np.zeros((totalRows, 2 + nLags))
+    n = D.shape[0]
+    # the time series and time index t must have the same length!
+    if t is not None:
+        assert n == len(t)
+
+    # A is the delay matrix with padded 0s at the top and bottom
     
-    A[:D.shape[0],0] = D.flatten()
-    
-    for i in range(1, 2 + nLags):
-        lower = predHorizon + (i - 1) * embInterval
-        upper = lower + D.shape[0]
+    totalRows = n + tau * E
+    A = np.zeros((totalRows, E + 1))
+
+    for i in range(E + 1):
+        lower = i * tau
+        upper = lower + n
         A[lower:upper, i] = D.flatten()
     
-    rowsLost = predHorizon + nLags * embInterval
+    # B is A with all padded rows removed
+    rowsLost = E * tau
     if rowsLost != 0:
         B = A[rowsLost : -rowsLost]
         if t is not None:
-            t = t[ : -rowsLost]
-    else: 
+            tTemp = np.zeros(totalRows)
+            tTemp[tau: tau + n] = t
+            t = tTemp[rowsLost : -rowsLost]
+    else:
         B = A
     
+    # remove all rows containing any null values, if requested
     if removeNAs:
         notNA = np.all(~np.isnan(B),axis=1)
 
         B = B[notNA]
         if t is not None:
-            # print(t.shape, notNA.shape)
             t = t[notNA]
     
+    # if a custom t is specified, then return the correct version alongside it
     if t is None:
         return (B[:,1:], B[:,0, None])
     else:
         return (B[:,1:], B[:,0, None], t)
 
+# Simple function which computes the hat matrix.
+#   Parameters
+#       M - time delay embedding matrix augmented with a column of 1s
+#       W - diagonal (n,n) matrix of weights
+#       x - E+1 dimensional vector with 1 in final entry, represents current
+#           state from which to make a prediction
 def getHat(M, W, x):
     hat = x @ la.pinv(W@M) @ W
     return hat
 
-# WRONG, NEED TO USE APPROPRIATE HAT MATRIX, WHICH IS MADE OF 
+# Compute the trace of the hat matrix where all training data are included (this
+# is not cross validation). This is a canonical estimation of model degrees of
+# freedom for local linear models.
+#   Parameters
+#       X - embedded training data, output of delayEmbed
+#       Y - vector of targets, output of delayEmbed
+#       tx - the times for each data point, normalized between 0 and 1
+#       theta - value for hyperparameter theta
+#       delta - value for hyperparameter delta
+#   Returns
+#       dofest - estimation of the degrees of freedom of a model for this dataset
 def dofestimation(X, Y, tx, theta, delta):
-
-    #_, hat = leaveOneOut(X, Y, tx, theta, delta,get_hat=True)
-    # print(hat.shape)
-    #dofest = np.trace(hat.T @ hat)
-    
     dofest = 0
+    # for each entry in the training dataset, compute the hat vector, then add
+    # the ith entry to our running total to compute the trace of the whole matrix
     for i in range(X.shape[0]):
         pred, hatvector = NSMap(X, Y, tx, X[i], tx[i], theta, delta, return_hat=True)
         dofest += hatvector[i]
     return dofest
 
-# leaves one input and output pair out, and use rest as training data
+# Leaves one input and output pair out, and use rest as training data
 # returns predictions which are the length of the whole time series
+#   Parameters
+#       X - embedded training data, output of delayEmbed
+#       Y - vector of targets, output of delayEmbed
+#       tx - the times for each data point, normalized between 0 and 1
+#       theta - value for hyperparameter theta
+#       delta - value for hyperparameter delta
+#       get_hat (optional) - if True, then hat matrix
+#   Returns
+#       timestepPredictions - vector of predictions for each training input
+#           OR
+#       (timestepPredictions, hat) - (vector of predictions for each training input,
+#                                     hat matrix)
 def leaveOneOut(X, Y, tx, theta, delta, get_hat=False):
     
     if get_hat:
@@ -90,17 +140,27 @@ def leaveOneOut(X, Y, tx, theta, delta, get_hat=False):
     else:
         return timestepPredictions
 
+# Computes the log likelihood for given hyperparameters, training and target
+# data.
+#   Parameters
+#       X - embedded training data, output of delayEmbed
+#       Y - vector of targets, output of delayEmbed
+#       tx - the times for each data point, normalized between 0 and 1
+#       theta - value for hyperparameter theta
+#       delta - value for hyperparameter delta
+#       returnSeries (optional) - if True, then return predictions for each element 
+#                               of training set
+#   Returns
+#       lnL - scalar log likelihood
+#           OR
+#       (lnL, Yhat) - (scalar log likelihood, predictions)
 def logLikelihood(X, Y, tx, theta, delta, returnSeries=False):
     
     n = Y.shape[0]
 
     Yhat = leaveOneOut(X, Y, tx, theta, delta)
     
-    # mean_squared_residuals = np.sum((Y-Yhat)**2) / n
-    
-    ### VERSION WITH MODEL DEGREES OF FREEDOM INCORPORATED
     k = dofestimation(X, Y, tx, theta, delta)
-    print(f"dof = {k}")
     mean_squared_residuals = np.sum((Y-Yhat)**2) / (n-k)
 
     lnL = (-n/2)*(np.log(mean_squared_residuals) + np.log(2*np.pi) + 1 )
@@ -120,35 +180,43 @@ def SMap(X, Y, x, theta):
     H = getHat(X, W, x)
     return H @ Y
 
-### TIME IS NOT INCLUDED AS A STATE VARIABLE ###
-# INPUTS
-#   X - (ndarray) training data, (n,p) array of state space variables
-#   Y - (ndarray) labels
-#   T - (ndarray) time for each row in X
-#   x - (ndarray) current state to predict from
-#   t - (scalar) current time to predict from
-#   theta - (scalar) hyperparameter
-#   delta - (scalar) hyperparameter
-# Note that T and t(where) must be standardized to be between 0 and 1 
-
+# The function which implements NSMap! Note that T and t(where) must be standardized 
+# to be between 0 and 1.
+#   Parameters
+#       X - (ndarray) training data, (n,p) array of state space variables
+#       Y - (ndarray) labels
+#       T - (ndarray) time for each row in X
+#       x - (ndarray) current state to predict from
+#       t - (scalar) current time to predict from
+#       theta - (scalar) hyperparameter
+#       delta - (scalar) hyperparameter
+#   Returns
+#       scalar prediction
+#           OR
+#       (scalar prediction, hat matrix row) if return_hat is true
+#           OR
+#       (scalar prediction, hat matrix row, derivative of h wrt theta, derivative of h wrt delta)
+#               if return_hat_derivatives is True
 def NSMap(X, Y, T, x, t, theta, delta, return_hat=False, return_hat_derivatives=False):
-    # create weights
-
+    
     n = X.shape[0]
-
     norms = la.norm(X - x,axis=1)
     d = np.mean(norms)
 
     W = np.exp(-1*(theta*norms)/d - delta*(T-t)**2)[:,None]
+    
+    # augment the training data with a column of 1s to allow for intercepts
     M = np.hstack([X, np.ones((n,1))])
     xaug = np.hstack([x, 1]).T
 
     if return_hat or return_hat_derivatives:
+        # weighted penrose inverse
         pinv = la.pinv(W*M)
 
         H = xaug @ (pinv.T * W).T
         prediction = (H @ Y)[0]
 
+        # compute the derivatives of the hat matrix wrt theta and delta
         if return_hat_derivatives:
             dWdtheta = -1 * W.flatten() * norms / d
             dWddelta = -1 * W.flatten() * ((T-t)**2)
@@ -163,41 +231,57 @@ def NSMap(X, Y, T, x, t, theta, delta, return_hat=False, return_hat_derivatives=
     
         return (prediction, H)
     else:
+        # use least squares to solve if hat matrix derivates aren't needed,
+        # as this is much faster than computing the penrose inverse
+        # and gives the same output
         prediction = xaug @ la.lstsq( W * M, W * Y, rcond=None)[0]
         return prediction
 
-def get_delta_agg(Xr, maxLags, t=None, horizon=1, tau=1, trainingSteps=100, return_forecast_skill=False, theta_fixed=False, make_plots=False):
+# Calculates aggregated delta and theta, and r_sqrd optionally for a given univariate time series
+#   Parameters
+#       Xr - univariate input time series in vector shape (n,)
+#       E - the number of columns in the delay matrix, same definition as in the paper
+def get_delta_agg(Xr, E, tau=1, t=None, horizon=1, trainingSteps=100, return_forecast_skill=False, theta_fixed=False, make_plots=False):
     
+    # crummy implementation: in current delayEmbed version, E is the number of
+    # EXTRA columns in the delay matrix, so if E = 0, then both Y and X have 1
+    # column. To match this interface with what is in the paper, where E is the 
+    # number of columns in X, we subtract 1.
+    assert E >= 1
+    E -= 1
+
     if t is None:
         t = np.linspace(0,1, num=len(Xr))
     else:
         # Remember to standardize t to be between 0 and 1!
         assert t[0] == 0 and t[-1] == 1
 
-    table = np.zeros((maxLags+1, 5))
-    hp = np.zeros(2)
-
     # produce delay embedding vector first so the set of targets is fixed across all E
-    Xemb, Y, tx = delayEmbed(Xr, horizon, maxLags, tau, t=t)
+    Xemb, Y, tx = delayEmbed(Xr, horizon, E, tau, t=t)
 
-    # for each number of lags from 0 to maxLags
-    for l in range(maxLags+1):
-        X = Xemb[:,:l+1]
+    # compute optimal hyperparameters and likelihood for NS-Map and S-Map 
+    # for each number of lags from 0 to E
+    table = np.zeros((E+1, 5))
+    hp = np.zeros(2)
+    for l in range(E + 1):
+        X = Xemb[:,:l + 1]
 
-        # print("NSMap")
+        # find optimal theta and delta using rprop gradient descent and their log likelihoods
         thetaNS, deltaNS, lnLNS = optimizeG(X, Y, tx, fixed=np.array([theta_fixed, False]), trainingSteps=trainingSteps, hp=hp.copy())
-        # print("SMap")
+        # find optimal theta for NSMap using the same algorithm, holding theta fixed
         thetaS, _, lnLS = optimizeG(X, Y, tx, fixed=np.array([theta_fixed, True]),trainingSteps=trainingSteps, hp=hp.copy())
 
         table[l] = np.array([deltaNS, lnLNS, lnLS, thetaNS, thetaS])
 
     if make_plots:
-        make_delta_plots(Xr, t, maxLags, table)
+        make_delta_plots(Xr, t, E, table)
 
+    # Aggregate delta using the different in likelihood of S-Map and NS-Map
     lnLdifference = table[:,1] - table[:,2]
-    # ns_area =  np.sum(np.maximum(lnLdifference, np.zeros(maxLags+1)))
     delta_agg_weights = np.exp(lnLdifference - np.max(lnLdifference))
     delta_agg = np.average(table[:,0], weights=delta_agg_weights)
+
+    # return the theta which maximizes log likelihood of NSMap
     theta = table[np.argsort(table[:,1])[-1],3]
 
     if return_forecast_skill:
@@ -205,39 +289,7 @@ def get_delta_agg(Xr, maxLags, t=None, horizon=1, tau=1, trainingSteps=100, retu
     else: 
         return delta_agg
 
-def make_delta_plots(Xr, t, maxLags, table):
-    fig, ax = plt.subplots(1)
-
-    fsize = 25
-    E_range = range(1,maxLags+2)
-
-    ax.plot(E_range, table[:,0],label=r"$\hat{\delta}$")
-    ax.set_xlabel("E", size = fsize)
-    ax.set_ylabel(r"$\hat{\delta}$", size = fsize, rotation=0)
-    ax.set_xticks(E_range)
-    ax.tick_params(axis='both', which='major', labelsize=fsize * 3 / 4)
-
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes('bottom', size='100%',pad=0.1)
-
-    minLine = (table[:,2] * 0)+min(min(table[:,2]),min(table[:,1])) 
-
-    cax.plot(E_range, table[:,2], "r--", label="SMap")
-    cax.plot(E_range, table[:,1], "y--", label="NSMap")
-    cax.fill_between(E_range, table[:,2], minLine, alpha=0.5, color="red")
-    cax.fill_between(E_range, table[:,1], minLine, alpha=0.5, color = "yellow")
-    cax.set_xlabel("E", size = fsize)
-    cax.set_ylabel(r"$\ln\mathcal{L}$", size = fsize, rotation=0)
-    cax.set_xticks(E_range)
-    cax.legend(fontsize = fsize)
-    cax.legend(fontsize = fsize)
-    cax.tick_params(axis='both', which='major', labelsize=fsize * 3 / 4)
-    cax.tick_params(axis='both', which='major', labelsize=fsize * 3 / 4)
-
-    plt.tight_layout()
-    plt.show()
-
-# ugly but necessary function, finds the r squared coefficient based on the other data from get_delta_agg
+# Compute the r squared coefficient based on the other data from get_delta_agg
 def get_r_sqrd(table, Xemb, Y, tau, tx):
     ibestNS = np.argmax(table[:,1])
     ibestS = np.argmax(table[:,2])
@@ -276,8 +328,6 @@ def gradient(X, Y, tx, theta, delta):
     dof = 0
 
     for i in range(0, X.shape[0]):
-        # create the train and test stuff
-        
         Xjts = X[i].copy()
         Yjts = Y[i].copy()
         tXjts = tx[i].copy()
@@ -309,7 +359,7 @@ def gradient(X, Y, tx, theta, delta):
 
     return (np.hstack([dl_dtheta, dl_ddelta]), E)
 
-# Optimize using GRADIENT DESCENT instead of evaluating a grid
+# Find the optimal hyperparameters of NS-Map or S-Map using gradient descent
 def optimizeG(X, Y, t, trainingSteps=40, hp=np.array([0.0,0.0]), fixed=np.array([False, False])):    
     err = 0
     
@@ -320,14 +370,12 @@ def optimizeG(X, Y, t, trainingSteps=40, hp=np.array([0.0,0.0]), fixed=np.array(
         errPrev = err
         grad, err = gradient(X, Y, t, hp[0], hp[1])
 
-        # print(f"[{count+1:02d}] theta: {hp[0]:.3f}, delta: {hp[1]:.3f}, log Likelihood: {err:.3f}")
-
         if abs(err-errPrev) < 0.01 or count == trainingSteps-1:
             break
 
         dweights, deltaPrev, gradPrev = calculateHPChange(grad, gradPrev, deltaPrev)
          
-        # floor and ceiling on the hyperparameters
+        # floor and ceiling the hyperparameters
         for i in range(2):
             if not fixed[i]:
                 hp[i] = max(0, hp[i] + dweights[i])
@@ -338,7 +386,7 @@ def calculateHPChange(grad, gradPrev, deltaPrev):
     rhoplus = 1.2 # if the sign of the gradient doesn't change, must be > 1
     rhominus = 0.5 # if the sign DO change, then use this val, must be < 1
     
-    grad = grad / la.norm(grad)# np.abs(grad) # NORMALIZE, because rprop ignores magnitude
+    grad = grad / la.norm(grad) # NORMALIZE, because rprop ignores magnitude
 
     s = np.multiply(grad, gradPrev) # ratio between -1 and 1 for each param
     spos = np.ceil(s) # 0 for - vals, 1 for + vals

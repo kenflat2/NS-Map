@@ -4,7 +4,9 @@ import numpy.linalg as la
 # Simple function which takes a time series with shape (n,) and return it with
 # mean 0 and standard deviation 1
 #   Parameters
-#       x - 
+#       x - vector time series input
+#   Results
+#       x with mean subtracted and standard deviation of 1
 def standardize(x):
     return (x - np.mean(x, axis=0, where=np.isfinite(x))) / np.std(x, axis=0, where=np.isfinite(x))
 
@@ -17,7 +19,8 @@ def standardize(x):
 #       t (optional) - if sampling is non-uniform, then specify the time
 #                      of each training data point, standardized between 0 and 1,
 #                      a correctly embedded version of t will also be returned
-#       removeNAs (optional) - if true, then remove all rows with null value
+#       removeNAs (optional) - if true, then remove all rows in full embedding 
+#                              matrix with null value
 #   Returns
 #       (X, Y) - (training data matrix of shape (n-tau*E, E), target values of shape (n, 1))
 #           OR
@@ -25,9 +28,14 @@ def standardize(x):
 #                    target values of shape (n, 1),
 #                    time vector updated correctly)
 def delayEmbed(D, E, tau, t = None, removeNAs=True):
+    
+    n = D.shape[0]
+    # the time series and time index t must have the same length!
+    if t is not None:
+        assert n == len(t)
 
     # A is the delay matrix with padded 0s at the top and bottom
-    n = D.shape[0]
+    
     totalRows = n + tau * E
     A = np.zeros((totalRows, E + 1))
 
@@ -40,9 +48,12 @@ def delayEmbed(D, E, tau, t = None, removeNAs=True):
     rowsLost = E * tau
     if rowsLost != 0:
         B = A[rowsLost : -rowsLost]
+        # if t exists, make it line up with the chronologically latest column of X
         if t is not None:
-            t = t[tau : tau - rowsLost]
-    else: 
+            tTemp = np.zeros(totalRows)
+            tTemp[tau: tau + n] = t
+            t = tTemp[rowsLost : -rowsLost]
+    else:
         B = A
     
     # remove all rows containing any null values, if requested
@@ -163,7 +174,15 @@ def logLikelihood(X, Y, tx, theta, delta, returnSeries=False):
     else:
         return lnL
 
-# make a 1 time step prediction based on a given state(nD vector)
+# Simple implementation of the classic SMap. Does the same thing as NSMap
+# with delta=0.
+#   Parameters
+#       X - (ndarray) training data, (n,p) array of state space variables
+#       Y - (ndarray) labels
+#       x - (ndarray) current state to predict from
+#       theta - (scalar) hyperparameter
+#   Returns
+#       scalar prediction
 def SMap(X, Y, x, theta):
     norms = la.norm(X-x,axis=1)
     d = np.mean(norms) # d = np.mean(norms) # 
@@ -173,7 +192,7 @@ def SMap(X, Y, x, theta):
     H = getHat(X, W, x)
     return H @ Y
 
-# The function which implements NSMap! Note that T and t(where) must be standardized 
+# Implementation of NSMap! Note that T and t(where) must be standardized 
 # to be between 0 and 1.
 #   Parameters
 #       X - (ndarray) training data, (n,p) array of state space variables
@@ -230,18 +249,22 @@ def NSMap(X, Y, T, x, t, theta, delta, return_hat=False, return_hat_derivatives=
         prediction = xaug @ la.lstsq( W * M, W * Y, rcond=None)[0]
         return prediction
 
-# Calculates aggregated delta and theta, and r_sqrd optionally for a given univariate time series
+# The test of nonstationarity for a given univariate series. Calculates aggregated 
+# delta and theta, and r_sqrd optionally.
 #   Parameters
-#       Xr - univariate input time series in vector shape (n,)
+#       Xr (ndarray)- univariate input time series in vector shape (n,)
 #       E - the number of columns in the delay matrix, same definition as in the paper
-def get_delta_agg(Xr, E, tau=1, t=None, horizon=1, trainingSteps=100, return_forecast_skill=False, theta_fixed=False, make_plots=False):
-    
-    # crummy implementation: in current delayEmbed version, E is the number of
-    # EXTRA columns in the delay matrix, so if E = 0, then both Y and X have 1
-    # column. To match this interface with what is in the paper, where E is the 
-    # number of columns in X, we subtract 1.
-    assert E >= 1
-    E -= 1
+#       tau - number of steps between lags
+#       t - vector representing the time of each observation, must begin at 0 and end
+#           at 1. A default t will be create which assumes equal spacing between inputs
+#           if one isn't specified here.
+#       trainingSteps - maximum number of gradient descent steps before optimization terminates
+#       return_forecast_skill - if True, then then return maximum forecast r^2 attained
+#                               across all embedding dimensions
+#       theta_fixed - if True, then hold theta at 0, forcing linear model structure.
+#                     This is used in round 1 of experiments to determine if nonlinear
+#                     model structure is needed to detect nonstationarity.
+def get_delta_agg(Xr, E, tau=1, t=None, trainingSteps=100, return_forecast_skill=False, theta_fixed=False):
 
     if t is None:
         t = np.linspace(0,1, num=len(Xr))
@@ -250,24 +273,21 @@ def get_delta_agg(Xr, E, tau=1, t=None, horizon=1, trainingSteps=100, return_for
         assert t[0] == 0 and t[-1] == 1
 
     # produce delay embedding vector first so the set of targets is fixed across all E
-    Xemb, Y, tx = delayEmbed(Xr, horizon, E, tau, t=t)
+    Xemb, Y, tx = delayEmbed(Xr, E, tau, t=t)
 
     # compute optimal hyperparameters and likelihood for NS-Map and S-Map 
-    # for each number of lags from 0 to E
-    table = np.zeros((E+1, 5))
+    # for each number of lags from 1 to E
+    table = np.zeros((E, 5))
     hp = np.zeros(2)
-    for l in range(E + 1):
-        X = Xemb[:,:l + 1]
+    for l in range(1, E + 1):
+        X = Xemb[:, :l]
 
         # find optimal theta and delta using rprop gradient descent and their log likelihoods
         thetaNS, deltaNS, lnLNS = optimizeG(X, Y, tx, fixed=np.array([theta_fixed, False]), trainingSteps=trainingSteps, hp=hp.copy())
         # find optimal theta for NSMap using the same algorithm, holding theta fixed
         thetaS, _, lnLS = optimizeG(X, Y, tx, fixed=np.array([theta_fixed, True]),trainingSteps=trainingSteps, hp=hp.copy())
 
-        table[l] = np.array([deltaNS, lnLNS, lnLS, thetaNS, thetaS])
-
-    if make_plots:
-        make_delta_plots(Xr, t, E, table)
+        table[l - 1] = np.array([deltaNS, lnLNS, lnLS, thetaNS, thetaS])
 
     # Aggregate delta using the different in likelihood of S-Map and NS-Map
     lnLdifference = table[:,1] - table[:,2]
@@ -275,7 +295,7 @@ def get_delta_agg(Xr, E, tau=1, t=None, horizon=1, trainingSteps=100, return_for
     delta_agg = np.average(table[:,0], weights=delta_agg_weights)
 
     # return the theta which maximizes log likelihood of NSMap
-    theta = table[np.argsort(table[:,1])[-1],3]
+    theta = table[np.argsort(table[:,1])[-1], 3]
 
     if return_forecast_skill:
         return (delta_agg, theta, get_r_sqrd(table, Xemb, Y, tau, tx))
