@@ -13,7 +13,6 @@ def standardize(x):
 # Create a delay embeddding vector from a given UNIVARIATE time series.
 #   Parameters
 #       D - a univariate time series with vector shape (n,)
-#       predHorizon - number of steps ahead to predict
 #       E - number of columns in training data matrix X
 #       tau - number of steps between each column
 #       t (optional) - if sampling is non-uniform, then specify the time
