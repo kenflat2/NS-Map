@@ -253,7 +253,7 @@ def NSMap(X, Y, T, x, t, theta, delta, return_hat=False, return_hat_derivatives=
 #   Parameters
 #       Xr (ndarray)- univariate input time series in vector shape (n,)
 #       E - the number of columns in the delay matrix, same definition as in the paper
-#       tau - number of steps between lags
+#       tau - number of steps between lags, default value is 1
 #       t - vector representing the time of each observation, must begin at 0 and end
 #           at 1. A default t will be create which assumes equal spacing between inputs
 #           if one isn't specified here.
