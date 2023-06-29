@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.2'
+VERSION = '1.3'
 DESCRIPTION = 'Implementation of NS-Map'
 LONG_DESCRIPTION = 'Implementation of NS-Map, a nonstationary extension of the ecological forecasting method S-Map.'
 
