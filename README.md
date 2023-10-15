@@ -13,3 +13,9 @@ For help using the project, email the author kenflat2@gmail.com.
 Veilleux, B.G. (1979). An Analysis of the Predatory Interaction Between *Paramecium* and *Didinium*. *Journal of Animal Ecology*, 48, 787–803.
 
 Benincà, E., Jöhnk, K.D., Heerkloss, R. & Huisman, J. (2009). Coupled predator–prey oscillations in a chaotic food web. *Ecology Letters*, 12, 1367–1378.
+
+Peterson, W. (2009). Copepod Species Richness as an Indicator of Long-Term Changes in the Coastal Ecosystem of the Northern California Current. California Cooperative Oceanic Fisheries Investigations Reports, 50.
+
+Ernest, S.K.M., Yenni, G.M., Allington, G., Bledsoe, E.K., Christensen, E.M., Diaz, R.M., et al. (2020). The Portal Project: a long-term study of a Chihuahuan desert ecosystem. bioRxiv, 332783.
+
+Warzybok, P., Santora, J.A., Ainley, D.G., Bradley, R.W., Field, J.C., Capitolo, P.J., et al. (2018). Prey switching and consumption by seabirds in the central California Current upwelling ecosystem: Implications for forage fish management. Journal of Marine Systems, 185, 25–39.
