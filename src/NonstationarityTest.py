@@ -1,4 +1,4 @@
-import NSMapToolkit as ns
+import src.NSMap as ns
 import numpy as np
 from scipy.integrate import dblquad
 from scipy.integrate import quad
