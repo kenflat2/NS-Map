@@ -105,9 +105,9 @@ def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E
     bayes_factor, error_bf = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1, lambda2, p)
 
     # Compute the log Bayes Factor
-    log_bayes_factor = np.log(bayes_factor)
+    evidence = 10 * np.log10(bayes_factor)
 
     # Compute the significance level
-    significance_level = 1 - np.exp(-log_bayes_factor)
+    significance_level = 1 - (10 ** (-evidence/10))
 
-    return log_bayes_factor, significance_level, error_bf
+    return evidence, significance_level, error_bf
