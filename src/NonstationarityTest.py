@@ -86,3 +86,28 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
     bayes_factor = marginal_likelihood_ns / marginal_likelihood_s
     error_bf = marginal_error_s / marginal_likelihood_s + marginal_error_ns / marginal_likelihood_ns
     return bayes_factor, error_bf
+
+# Function to perform the nonstationarity test
+# Inputs: 
+#   - data: the time series data Xr
+#   - theta_range: range for theta parameter (tuple)
+#   - delta_range: range for delta parameter (tuple)
+#   - E_range: range for E parameter (tuple)
+#   - lambda1: parameter for the prior on theta (float)
+#   - lambda2: parameter for the prior on delta (float)
+#   - p: parameter for the prior on E (float)
+# Outputs:
+#   - log_bayes_factor: log of the Bayes Factor between stationary and nonstationary model (float)
+#   - significance_level: significance level of the test (float)
+#   - error_bf: error estimate for the Bayes Factor (float)
+def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, lambda2=1.0, p=0.5):
+    # Compute the Bayes Factor
+    bayes_factor, error_bf = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1, lambda2, p)
+
+    # Compute the log Bayes Factor
+    log_bayes_factor = np.log(bayes_factor)
+
+    # Compute the significance level
+    significance_level = 1 - np.exp(-log_bayes_factor)
+
+    return log_bayes_factor, significance_level, error_bf
