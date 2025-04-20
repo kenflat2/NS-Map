@@ -62,30 +62,40 @@ def marginalize_likelihood_E(marginal_likelihood_func, data, param_range, lambda
         marginal_error += error
     return marginal_likelihood, marginal_error
 
-def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5):
+def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5, debug=False):
 
     marginal_likelihood_s = 0
     marginal_error_s = 0
     marginal_likelihood_ns = 0
     marginal_error_ns = 0
 
+    marginal_likelihood_s = np.zeros(E_range[1])
+    marginal_likelihood_ns = np.zeros(E_range[1])
+    marginal_error_s = np.zeros(E_range[1])
+    marginal_error_ns = np.zeros(E_range[1])
+
     for E in range(E_range[0], E_range[1]):
         data_E = (data[0], data[1], E, data[2])
 
         # Marginalize the likelihood for SMap (null)
-        integral_s, error_s = marginalize_likelihood_1d(data_E, theta_range, lambda1)
-        marginal_likelihood_s += integral_s * prior_E(E)
-        marginal_error_s += error_s
+        marginal_likelihood_s[E], marginal_error_s[E] = marginalize_likelihood_1d(data_E, theta_range, lambda1)
 
         # Marginalize the likelihood for NSMap
-        integral_ns, error_ns = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
-        marginal_likelihood_ns += integral_ns * prior_E(E)
-        marginal_error_ns += error_ns
+        marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
+
+    marginal_likelihood_s = np.dot(marginal_likelihood_s, prior_E(E_range[0]))
+    marginal_error_s = np.sum(marginal_error_s)
+    marginal_likelihood_ns = np.dot(marginal_likelihood_ns, prior_E(E_range[0]))
+    marginal_error_ns = np.sum(marginal_error_ns)
 
     # Compute the Bayes Factor
     bayes_factor = marginal_likelihood_ns / marginal_likelihood_s
     error_bf = marginal_error_s / marginal_likelihood_s + marginal_error_ns / marginal_likelihood_ns
-    return bayes_factor, error_bf
+    if debug:
+        return bayes_factor, error_bf, marginal_likelihood_s, marginal_error_s, marginal_likelihood_ns, marginal_error_ns
+    else:
+        # Return the Bayes Factor and error estimate
+        return bayes_factor, error_bf
 
 # Function to perform the nonstationarity test
 # Inputs: 
