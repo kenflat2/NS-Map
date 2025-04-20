@@ -2,7 +2,6 @@ import numpy as np
 import numpy.linalg as la
 from scipy.integrate import dblquad
 from scipy.integrate import quad
-from tqdm.notebook import tqdm
 
 # Simple function which takes a time series with shape (n,) and return it with
 # mean 0 and standard deviation 1

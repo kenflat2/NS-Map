@@ -1,4 +1,6 @@
 {
     "length": 200,
-    "N_replicates": 500
+    "N_replicates": 500,
+    "period" : 12,
+    "obs_noise" : 0.1
 }
