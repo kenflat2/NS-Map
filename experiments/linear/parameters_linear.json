@@ -53,8 +53,15 @@
             }
         }
     ],
-    "length": 200,
-    "N_replicates": 500,
+    "length" : 200,
+    "N_replicates" : 5,
     "period" : 12,
-    "obs_noise" : 0.1
+    "obs_noise" : 0.1,
+    "theta_range" : [0.0, 10.0],
+    "delta_range" : [0.0, 10.0],
+    "E_range" : [0, 8],
+    "lambda1" : 1.0,
+    "lambda2" : 1.0,
+    "p" : 0.5,
+    "tau" : 1
 }

@@ -8,7 +8,9 @@ import sys
 sys.path.append("../../")
 from utils.TimeseriesToolkit import standardize
 
-with open("parameters_linear.json", "r") as f:
+experiment_directory = "experiments/linear/"
+
+with open(experiment_directory + "parameters_linear.json", "r") as f:
     params = json.load(f)
 
 ## MODELS TO BE TESTED ##
@@ -71,7 +73,7 @@ def generate_stationary_equilibrium():
 
     time_series = generate_ricker_series(k, mu=model_params["obs_noise"])
     # obs_noise = rand.normal(0, model_params["obs_noise"], params["length"])
-    return time_series # + obs_noise
+    return time_series
 
 def generate_nonstationary_equilibrium_trend():
     model_params = params["experiments"][5]["parameters"]
@@ -79,4 +81,4 @@ def generate_nonstationary_equilibrium_trend():
     k = lambda t: 1.0 + model_params["trend"] * t
     time_series = generate_ricker_series(k, mu=model_params["obs_noise"])
 
-    return time_series # + obs_noise + trend
+    return time_series
