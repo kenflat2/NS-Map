@@ -1,4 +1,58 @@
 {
+    "experiments" : [
+        {
+            "name": "stationary_linear",
+            "description": "Sinusoidal time series, imagined to arise from a linear system, with observation noise.",
+            "parameters": {
+                "period" : 12,
+                "obs_noise" : 0.1
+            }
+        },
+        {
+            "name": "nonstationary_trend_linear",
+            "description": "Sinusoidal time series, imagined to arise from a linear system, with observation noise and a nonstationary trend in the mean.",
+            "parameters": {
+                "trend": 1.0,
+                "N_replicates": 500,
+                "period" : 12,
+                "obs_noise" : 0.1
+            }
+        },
+        {
+            "name": "nonstationary_variance_increase_linear",
+            "description": "Sinusoidal time series, imagined to arise from a linear system, with observation noise and a nonstationary seasonal component.",
+            "parameters": {
+                "period" : 12,
+                "obs_noise" : 0.1,
+                "variance_increase": 1.0
+            }
+        },
+        {
+            "name": "nonstationary_oscillation_speed_linear",
+            "description": "Sinusoidal time series, imagined to arise from a linear system, with observation noise and a nonstationary trend and seasonal component.",
+            "parameters": {
+                "period" : 12,
+                "obs_noise" : 0.1
+            }
+        },
+        {
+            "name": "stationary_equilibrium",
+            "description": "Ricker system at equilibrium with process noise and fixed mean.",
+            "parameters": {
+                "period" : 12,
+                "obs_noise" : 0.1
+            }
+        },
+        {
+            "name": "nonstationary_equilibrium_trend",
+            "description": "Ricker system at equilibrium with process noise and time dependent mean.",
+            "parameters": {
+                "period" : 12,
+                "obs_noise" : 0.1,
+                "trend": 1.0
+            }
+        }
+    ],
     "length": 200,
     "N_replicates": 500,
     "period" : 12,
