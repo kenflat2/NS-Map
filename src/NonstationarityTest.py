@@ -69,12 +69,14 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
     marginal_likelihood_ns = 0
     marginal_error_ns = 0
 
-    marginal_likelihood_s = np.zeros(E_range[1])
-    marginal_likelihood_ns = np.zeros(E_range[1])
-    marginal_error_s = np.zeros(E_range[1])
-    marginal_error_ns = np.zeros(E_range[1])
+    embedding_dimensions = np.arange(E_range[0], E_range[1])
 
-    for E in range(E_range[0], E_range[1]):
+    marginal_likelihood_s = np.zeros(E_range[1] - E_range[0])
+    marginal_likelihood_ns = np.zeros(E_range[1] - E_range[0])
+    marginal_error_s = np.zeros(E_range[1] - E_range[0])
+    marginal_error_ns = np.zeros(E_range[1] - E_range[0])
+
+    for E in embedding_dimensions:
         data_E = (data[0], data[1], E, data[2])
 
         # Marginalize the likelihood for SMap (null)
@@ -83,9 +85,10 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
         # Marginalize the likelihood for NSMap
         marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
 
-    marginal_likelihood_s = np.dot(marginal_likelihood_s, prior_E(E_range[0]))
+
+    marginal_likelihood_s = np.dot(marginal_likelihood_s, prior_E(embedding_dimensions))
     marginal_error_s = np.sum(marginal_error_s)
-    marginal_likelihood_ns = np.dot(marginal_likelihood_ns, prior_E(E_range[0]))
+    marginal_likelihood_ns = np.dot(marginal_likelihood_ns, prior_E(embedding_dimensions))
     marginal_error_ns = np.sum(marginal_error_ns)
 
     # Compute the Bayes Factor

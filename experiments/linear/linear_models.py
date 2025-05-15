@@ -1,16 +1,24 @@
-import json
-import numpy as np
 import os
-import numpy.random as rand
-
 import sys
 
-sys.path.append("../../")
+# Dynamically set the root directory
+root = os.path.dirname(os.path.abspath(__name__))  # Current file's directory
+sys.path.append(root)
+# experiment_directory = os.path.join(ROOT_DIR)
+
+import json
+import numpy as np
+import numpy.random as rand
+from pathlib import Path
+
 from utils.TimeseriesToolkit import standardize
 
-experiment_directory = "experiments/linear/"
 
-with open(experiment_directory + "parameters_linear.json", "r") as f:
+experiment_directory = "/experiments/linear/"
+
+print(root + experiment_directory + "parameters_linear.json")
+
+with open(root + experiment_directory + "parameters_linear.json", "r") as f:
     params = json.load(f)
 
 ## MODELS TO BE TESTED ##
@@ -82,3 +90,41 @@ def generate_nonstationary_equilibrium_trend():
     time_series = generate_ricker_series(k, mu=model_params["obs_noise"])
 
     return time_series
+
+def generate_autoregressive():
+    model_params = params["experiments"][6]["parameters"]
+
+    yii=np.zeros(params["length"]); yii[0]=10
+    a=model_params["a"]
+    for i in range(1,params["length"]):
+        yii[i]=yii[i-1]*a+np.random.normal(0, model_params["process_noise"])
+
+    return yii
+
+def generate_autoregressive_plus_sinusoid():
+    model_params = params["experiments"][7]["parameters"]
+
+    yii=np.zeros(params["length"]); yii[0]=10
+    a=model_params["a"]
+    for i in range(1,params["length"]):
+        yii[i]=yii[i-1]*a+np.random.normal(0, model_params["process_noise"])
+
+    t = np.arange(params["length"])
+    y_sin = np.sin(2*np.pi/12*t)+np.random.normal(0, model_params["obs_noise"], params["length"])
+    y = y_sin + yii
+
+    return y
+
+def generate_autoregressive_plus_sinusoid2():
+    model_params = params["experiments"][8]["parameters"]
+
+    yii=np.zeros(params["length"]); yii[0]=10
+    a=model_params["a"]
+    for i in range(1,params["length"]):
+        yii[i]=yii[i-1]*a+np.random.normal(0, model_params["process_noise"])
+
+    t = np.arange(params["length"])
+    y_sin = np.sin(2*np.pi/12*t)+np.random.normal(0, model_params["obs_noise"], params["length"])
+    y = y_sin + 0.3*yii
+
+    return y

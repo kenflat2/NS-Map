@@ -51,15 +51,45 @@
                 "obs_noise" : 0.1,
                 "trend": 1.0
             }
+        },
+        {
+            "name": "autoregressive",
+            "description": "Ricker system at equilibrium with process noise and time dependent mean.",
+            "parameters": {
+                "period" : 12,
+                "obs_noise" : 0.1,
+                "process_noise": 0.5,
+                "a": 0.95
+            }
+        },
+        {
+            "name": "autoregressive_plus_sinusoid",
+            "description": "Ricker system at equilibrium with process noise and time dependent mean.",
+            "parameters": {
+                "period" : 12,
+                "obs_noise" : 0.1,
+                "process_noise": 0.5,
+                "a": 0.95
+            }
+        },
+        {
+            "name": "autoregressive_plus_sinusoid2",
+            "description": "Ricker system at equilibrium with process noise and time dependent mean.",
+            "parameters": {
+                "period" : 12,
+                "obs_noise" : 0.05,
+                "process_noise": 0.5,
+                "a": 0.95
+            }
         }
     ],
     "length" : 200,
-    "N_replicates" : 5,
+    "N_replicates" : 50,
     "period" : 12,
     "obs_noise" : 0.1,
-    "theta_range" : [0.0, 10.0],
-    "delta_range" : [0.0, 10.0],
-    "E_range" : [0, 8],
+    "theta_range" : [0.0, 4.0],
+    "delta_range" : [0.0, 4.0],
+    "E_range" : [0, 7],
     "lambda1" : 1.0,
     "lambda2" : 1.0,
     "p" : 0.5,
