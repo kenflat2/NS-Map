@@ -16,10 +16,31 @@ from utils.TimeseriesToolkit import standardize
 
 experiment_directory = "/experiments/linear/"
 
-print(root + "/parameters_linear.json")
+print(root + experiment_directory + "parameters_linear.json")
 
-with open(root + "/parameters_linear.json", "r") as f:
+with open(root + experiment_directory + "parameters_linear.json", "r") as f:
     params = json.load(f)
+
+def generate_logistic(tlen, r_base, r_slope, observation_noise, process_noise):
+    model_params = params["experiments"][0]["parameters"]
+
+    r = lambda t: r_base + r_slope * t
+
+    ts = np.zeros(tlen)
+    ts[0] = rand.uniform(0, 1)
+
+    for i in range(tlen-1):
+        t = i / (tlen - 1)
+        x = r(t) * ts[i] * (1 - ts[i])
+        u = np.log(x / (1 - x))
+        z = rand.normal(0, process_noise)
+        ts[i+1] = 1 / (1 + np.exp(z - u))
+
+    return ts[:,None] + rand.normal(0, observation_noise, tlen)[:, None]
+
+def generate_food_chain(tlen, b1_base, b1_trend, observation_noise, process_noise):
+    model_params = params["experiments"][1]["parameters"]
+
 
 ## MODELS TO BE TESTED ##
 def generate_stationary_linear():
@@ -72,59 +93,3 @@ def generate_ricker_series(k, mu=0.0):
         ts[i] = ricker(ts[i-1], (i-1)/(params["length"]-1))
     
     return standardize(ts)
-
-def generate_stationary_equilibrium():
-
-    model_params = params["experiments"][4]["parameters"]
-
-    k = lambda t: 1.0
-
-    time_series = generate_ricker_series(k, mu=model_params["obs_noise"])
-    # obs_noise = rand.normal(0, model_params["obs_noise"], params["length"])
-    return time_series
-
-def generate_nonstationary_equilibrium_trend():
-    model_params = params["experiments"][5]["parameters"]
-
-    k = lambda t: 1.0 + model_params["trend"] * t
-    time_series = generate_ricker_series(k, mu=model_params["obs_noise"])
-
-    return time_series
-
-def generate_autoregressive():
-    model_params = params["experiments"][6]["parameters"]
-
-    yii=np.zeros(params["length"]); yii[0]=10
-    a=model_params["a"]
-    for i in range(1,params["length"]):
-        yii[i]=yii[i-1]*a+np.random.normal(0, model_params["process_noise"])
-
-    return yii
-
-def generate_autoregressive_plus_sinusoid():
-    model_params = params["experiments"][7]["parameters"]
-
-    yii=np.zeros(params["length"]); yii[0]=10
-    a=model_params["a"]
-    for i in range(1,params["length"]):
-        yii[i]=yii[i-1]*a+np.random.normal(0, model_params["process_noise"])
-
-    t = np.arange(params["length"])
-    y_sin = np.sin(2*np.pi/12*t)+np.random.normal(0, model_params["obs_noise"], params["length"])
-    y = y_sin + yii
-
-    return y
-
-def generate_autoregressive_plus_sinusoid2():
-    model_params = params["experiments"][8]["parameters"]
-
-    yii=np.zeros(params["length"]); yii[0]=10
-    a=model_params["a"]
-    for i in range(1,params["length"]):
-        yii[i]=yii[i-1]*a+np.random.normal(0, model_params["process_noise"])
-
-    t = np.arange(params["length"])
-    y_sin = np.sin(2*np.pi/12*t)+np.random.normal(0, model_params["obs_noise"], params["length"])
-    y = y_sin + 0.3*yii
-
-    return y

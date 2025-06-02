@@ -38,7 +38,7 @@ def nonstationary_test_experiment(f, filename):
 if __name__ == "__main__":
     # Run the simulation for the stationary model
 
-    for experiment in params["experiments"][6:]:
+    for experiment in params["experiments"]:
         dynamic_function_name = "generate_" + experiment["name"]
         dynamic_function = getattr(experiments.linear.linear_models, dynamic_function_name)
 
