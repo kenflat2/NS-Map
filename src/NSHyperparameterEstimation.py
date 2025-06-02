@@ -25,8 +25,8 @@ def compute_posterior_weighted_parameters(data, theta_range, delta_range, E_rang
     return numerator1 / Z, numerator2 / Z
 
 def posterior_weighted_function(func, data, param1_range, param2_range, lambda1=1.0, lambda2=1.0):
-    post_weighted_func = lambda theta, delta : posterior_2d(theta, delta) * func(theta, delta)
-	
+    post_weighted_func = lambda theta, delta, data, lambda1, lambda2: posterior_2d(theta, delta, data, lambda1, lambda2) * func(theta, delta)
+
     integral, error = dblquad(
         post_weighted_func,
         param1_range[0], param1_range[1],  # Integration limits for theta
