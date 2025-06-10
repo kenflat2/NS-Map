@@ -9,7 +9,9 @@
                 "obs_noise" : [0.0, 0.1, 0.2, 0.3],
                 "process_noise": [0.0, 0.1, 0.2],
                 "time_series_length": [50, 100, 200],
-                "N_replicates": 500
+                "default_length": 100,
+                "default_obs_noise": 0.1,
+                "default_process_noise": 0.1
             }
         },
         {
@@ -17,16 +19,22 @@
             "description": "Nonlinear continuous time system.",
             "parameters": {
                 "nonstat_param_base": 3,
-                "nonstat_param_slope": [0.0, 2.0, 4.0],
+                "nonstat_param_slope": [0.0, 1.0, 4.0],
                 "obs_noise" : [0.0, 0.1, 0.2, 0.3],
                 "process_noise": [0.0, 0.1, 0.2],
-                "time_series_length": [50, 100, 200]
+                "time_series_length": [50, 100, 200],
+                "default_length": 100,
+                "default_obs_noise": 0.1,
+                "default_process_noise": 0.1,
+                "reduction": 256,
+                "settling_time": 10000,
+                "time_per_step" : 10
             }
         }
     ],
-    "theta_range" : [0.0, 20.0],
-    "delta_range" : [0.0, 20.0],
-    "E_range" : [0, 7],
+    "theta_range" : [0.0, 4.0],
+    "delta_range" : [0.0, 4.0],
+    "E_range" : [0, 5],
     "lambda1" : 1.0,
     "lambda2" : 1.0,
     "p" : 0.5,

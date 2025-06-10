@@ -1,0 +1,76 @@
+{
+    "experiments" : [
+        {
+            "name": "linear",
+            "description": "Simple linear model.",
+            "parameters": {
+                "obs_noise" : 0.1,
+                "period" : 12,
+                "time_series_length": 200
+            }
+        },
+        {
+            "name": "linear_nonstat",
+            "description": "Simple linear model with increasing oscillations.",
+            "parameters": {
+                "nonstat_param_base": 4.0,
+                "nonstat_param_slope": -1.0,
+                "period" : 12,
+                "obs_noise" : 0.1,
+                "time_series_length": 200
+            }
+        },
+        {
+            "name": "logistic",
+            "description": "Nonlinear discrete time system.",
+            "parameters": {
+                "param_base" : 4.0,
+                "obs_noise" : 0.1,
+                "time_series_length": 200
+            }
+        },
+        {
+            "name": "logistic_nonstat",
+            "description": "Nonlinear discrete time system.",
+            "parameters": {
+                "nonstat_param_base": 4.0,
+                "nonstat_param_slope": -1.0,
+                "obs_noise" : 0.1,
+                "time_series_length": 200
+            }
+        },
+        {
+            "name": "food_chain",
+            "description": "Nonlinear continuous time system.",
+            "parameters": {
+                "nonstat_param": 4.0,
+                "obs_noise" : 0.1,
+                "time_series_length": 200,
+                "reduction": 256,
+                "settling_time": 10000,
+                "time_per_step" : 10
+            }
+        },
+        {
+            "name": "food_chain_nonstat",
+            "description": "Nonlinear continuous time system, nonstationary.",
+            "parameters": {
+                "nonstat_param_base": 4.0,
+                "nonstat_param_slope": 3.0,
+                "obs_noise" : 0.1,
+                "time_series_length": 200,
+                "reduction": 256,
+                "settling_time": 10000,
+                "time_per_step" : 10
+            }
+        }
+    ],
+    "theta_range" : [0.0, 4.0],
+    "delta_range" : [0.0, 4.0],
+    "E_range" : [0, 5],
+    "lambda1" : 1.0,
+    "lambda2" : 1.0,
+    "p" : 0.5,
+    "tau" : 1,
+    "N_replicates": 2
+}

@@ -12,13 +12,14 @@ import numpy.random as rand
 from pathlib import Path
 
 from utils.TimeseriesToolkit import standardize
+from scipy.integrate import odeint
 
 
-experiment_directory = "/experiments/linear/"
+experiment_directory = "/experiments/simulated_round_2/"
 
-print(root + experiment_directory + "parameters_linear.json")
+print(root + experiment_directory + "parameters_round2.json")
 
-with open(root + experiment_directory + "parameters_linear.json", "r") as f:
+with open(root + experiment_directory + "parameters_round2.json", "r") as f:
     params = json.load(f)
 
 def generate_logistic(tlen, r_base, r_slope, observation_noise, process_noise):
@@ -38,58 +39,44 @@ def generate_logistic(tlen, r_base, r_slope, observation_noise, process_noise):
 
     return ts[:,None] + rand.normal(0, observation_noise, tlen)[:, None]
 
+def FoodChainP(xi, t, b1):
+    (x,y,z)=xi
+
+    a1 = 5
+    a2 = 0.1
+    b1 = b1(t)
+    b2 = 2
+    d1 = 0.4
+    d2 = 0.01
+
+    dx = x*(1-x)- a1*x*y/(1+b1*x)
+    dy = a1*x*y/(1 + b1*x) - d1*y - a2*y*z/(1 + b2*y)
+    dz = a2*y*z/(1 + b2*y) - d2*z
+
+    return dx, dy, dz
+
 def generate_food_chain(tlen, b1_base, b1_trend, observation_noise, process_noise):
     model_params = params["experiments"][1]["parameters"]
 
+    settlingTime = model_params["settling_time"]
+    end = model_params["time_per_step"] * tlen
+    reduction = model_params["reduction"]
 
-## MODELS TO BE TESTED ##
-def generate_stationary_linear():
-    model_params = params["experiments"][0]["parameters"]
+    b1 = lambda t: b1_base + b1_trend * t / end
 
-    theta = lambda t: 2 * np.pi / model_params["period"] * t
-    x0 = rand.random(1)[0] * 2 * np.pi
-    time_series = np.sin(theta(np.arange(params["length"])) + x0) * np.sqrt(2)
-    obs_noise = rand.normal(0, model_params["obs_noise"], params["length"])
-    return time_series + obs_noise
+    x0 = np.ones(3)
 
-def generate_nonstationary_trend_linear():
-    model_params = params["experiments"][1]["parameters"]
+    if settlingTime > 0:
+        tSettle = np.arange(0,settlingTime, step=end/(reduction*tlen))
+        fixed_driver = lambda t: b1_base
 
-    theta = lambda t: 2 * np.pi / model_params["period"] * t
-    x0 = rand.random(1)[0] * 2 * np.pi
-    time_series = np.sin(theta(np.arange(params["length"])) + x0) * np.sqrt(2)
-    obs_noise = rand.normal(0, model_params["obs_noise"], params["length"])
-    trend = model_params["trend"] * np.linspace(0,1,num=params["length"])
-    return time_series + obs_noise + trend
-
-def generate_nonstationary_variance_increase_linear():
-    model_params = params["experiments"][2]["parameters"]
-
-    theta = lambda t: 2 * np.pi / model_params["period"] * t
-    x0 = rand.random(1)[0] * 2 * np.pi
-    time_series = np.sin(theta(np.arange(params["length"])) + x0) * np.sqrt(2)
-    obs_noise = rand.normal(0, model_params["obs_noise"], params["length"])
-    variance_increase = model_params["variance_increase"] * np.linspace(1, 2, num = params["length"])
-    return time_series * variance_increase + obs_noise
-
-def generate_nonstationary_oscillation_speed_linear():
-    model_params = params["experiments"][3]["parameters"]
-
-    theta = lambda t: 2 * np.pi / model_params["period"] * ((t / model_params["period"]) ** 2)
-    x0 = rand.random(1)[0] * 2 * np.pi
-    time_series = np.sin(theta(np.arange(params["length"])) + x0) * np.sqrt(2)
-    obs_noise = rand.normal(0, model_params["obs_noise"], params["length"])
-    return time_series + obs_noise
-
-def generate_ricker_series(k, mu=0.0):
-
-    x0 = k(0)
-
-    ts = np.zeros(params["length"])
-    ts[0] = x0
-    ricker = lambda x, t: x * np.exp(1 - x / k(t)) + mu * rand.normal(0, 1)
-
-    for i in range(1, len(ts)):
-        ts[i] = ricker(ts[i-1], (i-1)/(params["length"]-1))
+        x0 = odeint(FoodChainP, x0, tSettle, args=(fixed_driver,))[-1]
     
-    return standardize(ts)
+    t = np.linspace(0,end,num=tlen*reduction)
+    ts = np.zeros((tlen, len(x0)))
+    ts[0] = x0
+
+    for i in range(tlen-1):
+        ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1] * np.exp(rand.normal(0,process_noise))
+
+    return ts + rand.normal(0, observation_noise, (tlen, len(x0)))

@@ -124,3 +124,19 @@ def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E
     significance_level = 1 - (10 ** (-evidence/10))
 
     return evidence, significance_level, error_bf
+
+
+# Function to perform the nonstationarity test with autoregressive model structure
+# Meant to emulate classical nonstationarity tests like Dickey-Fuller
+# Inputs:
+def nonstationarity_test_linear(data, theta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, p=0.5):
+    # Compute the Bayes Factor for the linear case
+    bayes_factor, error_bf = compute_bayes_factor(data, theta_range, (0.0, 0.0), E_range, lambda1, 1.0, p)
+
+    # Compute the log Bayes Factor
+    evidence = 10 * np.log10(bayes_factor)
+
+    # Compute the significance level
+    significance_level = 1 - (10 ** (-evidence/10))
+
+    return evidence, significance_level, error_bf
