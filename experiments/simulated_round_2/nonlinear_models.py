@@ -1,8 +1,9 @@
 import os
 import sys
 
-# Dynamically set the root directory
-root = os.path.dirname(os.path.abspath(__name__))  # Current file's directory
+# Hard code the root directory
+root = '/home/kenflat2/NS-Map/' # os.path.dirname(os.path.dirname(experiment_directory))  # Parent directory of the current file
+print(root)
 sys.path.append(root)
 # experiment_directory = os.path.join(ROOT_DIR)
 
@@ -14,16 +15,13 @@ from pathlib import Path
 from utils.TimeseriesToolkit import standardize
 from scipy.integrate import odeint
 
+experiment_directory = os.path.join(root, "experiments", "simulated_round_2")
 
-experiment_directory = "/experiments/simulated_round_2/"
-
-print(root + experiment_directory + "parameters_round2.json")
-
-with open(root + experiment_directory + "parameters_round2.json", "r") as f:
+with open(os.path.join(experiment_directory, "parameters_round2.json"), "r") as f:
     params = json.load(f)
 
 def generate_logistic(tlen, r_base, r_slope, observation_noise, process_noise):
-    model_params = params["experiments"][0]["parameters"]
+    model_params = params["experiments"][1]["parameters"]
 
     r = lambda t: r_base + r_slope * t
 
@@ -56,7 +54,7 @@ def FoodChainP(xi, t, b1):
     return dx, dy, dz
 
 def generate_food_chain(tlen, b1_base, b1_trend, observation_noise, process_noise):
-    model_params = params["experiments"][1]["parameters"]
+    model_params = params["experiments"][0]["parameters"]
 
     settlingTime = model_params["settling_time"]
     end = model_params["time_per_step"] * tlen
@@ -79,4 +77,4 @@ def generate_food_chain(tlen, b1_base, b1_trend, observation_noise, process_nois
     for i in range(tlen-1):
         ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1] * np.exp(rand.normal(0,process_noise))
 
-    return ts + rand.normal(0, observation_noise, (tlen, len(x0)))
+    return ts[:, 0, None] + rand.normal(0, observation_noise, (tlen, 1))

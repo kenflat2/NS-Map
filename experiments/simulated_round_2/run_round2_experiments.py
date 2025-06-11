@@ -5,6 +5,9 @@ import sys
 root = os.path.dirname(os.path.abspath(__name__))  # Current file's directory
 experiment_directory = os.path.join(root, "experiments", "simulated_round_2")
 
+print(root)
+print(experiment_directory)
+
 sys.path.append(root)
 
 import json
