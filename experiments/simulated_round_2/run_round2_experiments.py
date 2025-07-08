@@ -3,10 +3,7 @@ import sys
 
 # Dynamically set the root directory
 root = os.path.dirname(os.path.abspath(__name__))  # Current file's directory
-experiment_directory = os.path.join(root, "experiments", "simulated_round_2")
-
-print(root)
-print(experiment_directory)
+experiment_directory = os.path.join(root, "experiments", "simulated_round_2/")
 
 sys.path.append(root)
 
@@ -15,20 +12,27 @@ import numpy as np
 import src.NSMap as ns
 import src.NonstationarityTest as nt
 import experiments.simulated_round_2.nonlinear_models
+import csv
 
 with open(os.path.join(experiment_directory, "parameters_round2.json"), "r") as f:
     params = json.load(f)
 
 ## Simulation Code ##
 
+def write_to_file(filename, row):
+
+    csv_path = os.path.join(experiment_directory, f"{filename}.csv")
+
+    # Open file in append mode for results
+    with open(csv_path, "a") as f_csv:
+        writer = csv.writer(f_csv)
+        writer.writerow(row)
+
 # General function which runs the simulations for all model types
 def nonstationary_test_experiment(f, experiment_params, filename):
 
     tau = params["tau"]
-
     N_replicates = params["N_replicates"]
-
-    results = []
 
     default_length = experiment_params["default_length"]
     default_observation_noise = experiment_params["default_obs_noise"]
@@ -38,20 +42,18 @@ def nonstationary_test_experiment(f, experiment_params, filename):
     print(f"Running nonstationarity test for {filename} with parameters:")
     print(f"Default Length: {default_length}, Default Observation Noise: {default_observation_noise}, Default Process Noise: {default_process_noise}, Nonstationarity Parameter Base: {nonstat_param_base}")
     print("Time Series Lengths:", experiment_params["time_series_length"])
-    
-    for _ in range(N_replicates):
-        print(f"Replication {_ + 1}/{N_replicates}")
+
+    header = ["nonstationary level", "time series length", "observation noise", "process noise", "evidence", "significance_level", "bayes factor error"]
+    write_to_file(filename, header)
+
+
+    for rep in range(N_replicates):
+        print(f"Replication {rep + 1}/{N_replicates}")
         # Time Series Length
         for length in experiment_params["time_series_length"]:
-
-            print(f"Testing time series length: {length}")
             t = np.linspace(0, 1, length)
-
             for i, nonstat_slope in enumerate(experiment_params["nonstat_param_slope"]):
-                # Generate the time series with the specified nonstationarity parameters
-                print(f"Testing nonstationarity slope: {nonstat_slope}")
                 time_series = f(length, nonstat_param_base, nonstat_slope, default_observation_noise, default_process_noise)
-
                 evidence, significance_level, bayes_factor_error = nt.nonstationarity_test(
                     (time_series, t, tau),
                     theta_range=params["theta_range"],
@@ -61,20 +63,15 @@ def nonstationary_test_experiment(f, experiment_params, filename):
                     lambda2=params["lambda2"],
                     p=params["p"]
                 )
-
-                results.append(np.array([i, length, default_observation_noise, default_process_noise, evidence, significance_level, bayes_factor_error]))
-                print(results)
+                row = [i, length, default_observation_noise, default_process_noise, evidence, significance_level, bayes_factor_error]
+                write_to_file(filename, row)
 
         print("Observation Noise:", experiment_params["obs_noise"])
         # Observation Noise
         for observation_noise in experiment_params["obs_noise"]:
-
             t = np.linspace(0, 1, default_length)
-
             for i, nonstat_slope in enumerate(experiment_params["nonstat_param_slope"]):
-                # Generate the time series with the specified nonstationarity parameters
                 time_series = f(default_length, nonstat_param_base, nonstat_slope, observation_noise, default_process_noise)
-
                 evidence, significance_level, bayes_factor_error = nt.nonstationarity_test(
                     (time_series, t, tau),
                     theta_range=params["theta_range"],
@@ -84,19 +81,15 @@ def nonstationary_test_experiment(f, experiment_params, filename):
                     lambda2=params["lambda2"],
                     p=params["p"]
                 )
-
-                results.append(np.array([i, default_length, observation_noise, default_process_noise, evidence, significance_level, bayes_factor_error]))
+                row = [i, default_length, observation_noise, default_process_noise, evidence, significance_level, bayes_factor_error]
+                write_to_file(filename, row)
 
         print("Process Noise:", experiment_params["process_noise"])
         # Process Noise
         for process_noise in experiment_params["process_noise"]:
-
             t = np.linspace(0, 1, default_length)
-
             for i, nonstat_slope in enumerate(experiment_params["nonstat_param_slope"]):
-                # Generate the time series with the specified nonstationarity parameters
                 time_series = f(default_length, nonstat_param_base, nonstat_slope, default_observation_noise, process_noise)
-
                 evidence, significance_level, bayes_factor_error = nt.nonstationarity_test(
                     (time_series, t, tau),
                     theta_range=params["theta_range"],
@@ -106,17 +99,8 @@ def nonstationary_test_experiment(f, experiment_params, filename):
                     lambda2=params["lambda2"],
                     p=params["p"]
                 )
-
-                results.append(np.array([i, default_length, default_observation_noise, process_noise, evidence, significance_level, bayes_factor_error]))
-
-
-    print(results)
-    results = np.vstack(results)
-    print(results)
-
-    np.savetxt(f"{filename}.csv", results, fmt="%i, %i, %0.1f, %0.2f, %0.4f,%0.4f,%0.4f", header = "nonstationary level, time series length, observation noise, process noise, evidence, significance_level, bayes factor error")
-
-## Run ##
+                row = [i, default_length, default_observation_noise, process_noise, evidence, significance_level, bayes_factor_error]
+                write_to_file(filename, row)
 
 if __name__ == "__main__":
     # Run the simulation for the stationary model

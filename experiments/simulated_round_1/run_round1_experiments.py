@@ -2,7 +2,7 @@ import os
 import sys
 
 # Dynamically set the root directory
-root = os.path.dirname(os.path.abspath(__name__))  # Current file's directory
+root = os.path.dirname(os.path.abspath(__name__))  # Use __file__ instead of __name__
 experiment_directory = os.path.join(root, "experiments", "simulated_round_1")
 
 sys.path.append(root)
@@ -13,21 +13,23 @@ import src.NSMap as ns
 import src.NonstationarityTest as nt
 import src.NSHyperparameterEstimation as nse
 import experiments.simulated_round_1.models
+import csv
 
-
-with open(os.path.join(experiment_directory, "parameters_nonlinear.json"), "r") as f:
+with open(os.path.join(experiment_directory, "parameters_round1.json"), "r") as f:
     params = json.load(f)
 
 ## Simulation Code ##
 
-# General function which runs the simulations for all model types
-def nonstationary_test_experiment(f, filename):
+def write_to_file(filename, row):
+    csv_path = os.path.join(experiment_directory, f"{filename}.csv")
+    with open(csv_path, "a") as f_csv:
+        writer = csv.writer(f_csv)
+        writer.writerow(row)
 
-    # Compute the posterior weighted parameters for the given system,
-    # then compute the normal nonstationary test then the linear nonstationary test
-
+# Pass experiment_params as an argument
+def nonstationary_test_experiment(f, filename, experiment_params):
     tau = params["tau"]
-    t = np.linspace(0, 1, params["length"])
+    t = np.linspace(0, 1, experiment_params["time_series_length"])
     N_replicates = int(params["N_replicates"])
 
     results = []
@@ -76,8 +78,9 @@ if __name__ == "__main__":
 
     for experiment in params["experiments"]:
         dynamic_function_name = "generate_" + experiment["name"]
-        dynamic_function = getattr(experiments.linear.linear_models, dynamic_function_name)
+        dynamic_function = getattr(experiments.simulated_round_1.models, dynamic_function_name)
 
-        nonstationary_test_experiment(dynamic_function, experiment_directory + experiment["name"])
+        dir_name = experiment_directory + "/" + experiment["name"]
+        nonstationary_test_experiment(dynamic_function, dir_name, experiment["parameters"])
         print(f"Finished {experiment['name']} experiment")
-        print("Results saved to " + experiment_directory + experiment["name"] + ".csv")
+        print("Results saved to " + dir_name + ".csv")

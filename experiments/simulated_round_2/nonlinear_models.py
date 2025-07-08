@@ -3,7 +3,6 @@ import sys
 
 # Hard code the root directory
 root = '/home/kenflat2/NS-Map/' # os.path.dirname(os.path.dirname(experiment_directory))  # Parent directory of the current file
-print(root)
 sys.path.append(root)
 # experiment_directory = os.path.join(ROOT_DIR)
 
@@ -21,7 +20,7 @@ with open(os.path.join(experiment_directory, "parameters_round2.json"), "r") as 
     params = json.load(f)
 
 def generate_logistic(tlen, r_base, r_slope, observation_noise, process_noise):
-    model_params = params["experiments"][1]["parameters"]
+    model_params = params["experiments"][0]["parameters"]
 
     r = lambda t: r_base + r_slope * t
 
@@ -54,7 +53,7 @@ def FoodChainP(xi, t, b1):
     return dx, dy, dz
 
 def generate_food_chain(tlen, b1_base, b1_trend, observation_noise, process_noise):
-    model_params = params["experiments"][0]["parameters"]
+    model_params = params["experiments"][1]["parameters"]
 
     settlingTime = model_params["settling_time"]
     end = model_params["time_per_step"] * tlen
