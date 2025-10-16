@@ -4,7 +4,7 @@ from scipy.integrate import dblquad
 from scipy.integrate import quad
 
 # Define a global constant for numerical integration tolerance
-INTEGRATION_TOL = 1e0
+INTEGRATION_TOL = 1e-4
 
 # Define the likelihood function
 def likelihood(data, theta, delta):
@@ -13,8 +13,8 @@ def likelihood(data, theta, delta):
     Xemb, Y, tx = ns.delayEmbed(Xr, E, tau, t=tx)
 
     # Rescale the hyperparameters so their range is greater
-    theta = np.exp(theta) - 1
-    delta = np.exp(delta) - 1
+    # theta = np.exp(theta) - 1
+    # delta = np.exp(delta) - 1
 
     return np.exp(ns.logLikelihood(Xemb, Y, tx, theta, delta))
 
@@ -92,7 +92,6 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
 
         # Marginalize the likelihood for NSMap
         marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
-
 
     marginal_likelihood_s = np.dot(marginal_likelihood_s, prior_E(embedding_dimensions))
     marginal_error_s = np.sum(marginal_error_s)
@@ -180,7 +179,7 @@ def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), la
 # Inputs:
 def nonstationarity_test_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, p=0.5):
     # Compute the Bayes Factor for the linear case
-    bayes_factor, error_bf = compute_bayes_factor_linear(data, delta_range, E_range, lambda1, 1.0, p)
+    bayes_factor, error_bf = compute_bayes_factor_linear(data, delta_range, E_range, lambda1, p, False)
 
     # Compute the log Bayes Factor
     evidence = 10 * np.log10(bayes_factor)

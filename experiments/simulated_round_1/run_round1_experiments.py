@@ -49,7 +49,7 @@ def nonstationary_test_experiment(f, filename, experiment_params):
 
         evidence_linear, significance_level_linear, bayes_factor_error_linear = nt.nonstationarity_test_linear(
             (system, t, tau),
-            theta_range=params["theta_range"],
+            delta_range=params["delta_range"],
             E_range=params["E_range"],
             lambda1=params["lambda1"],
             p=params["p"]

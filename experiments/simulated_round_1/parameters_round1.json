@@ -65,11 +65,11 @@
             }
         }
     ],
-    "theta_range" : [0.0, 5.0],
-    "delta_range" : [0.0, 5.0],
+    "theta_range" : [0.0, 150.0],
+    "delta_range" : [0.0, 150.0],
     "E_range" : [0, 6],
-    "lambda1" : 1.0,
-    "lambda2" : 1.0,
+    "lambda1" : 1e-2,
+    "lambda2" : 1e-2,
     "p" : 0.5,
     "tau" : 1,
     "N_replicates": 2
