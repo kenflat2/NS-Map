@@ -4,7 +4,7 @@ from scipy.integrate import dblquad
 from scipy.integrate import quad
 
 # Define a global constant for numerical integration tolerance
-INTEGRATION_TOL = 1e-4
+INTEGRATION_TOL = 1e-2
 
 # Define the likelihood function
 def likelihood(data, theta, delta):
@@ -29,16 +29,59 @@ def prior_2d(theta, delta, lambda_d = 1.0, lambda_t=1.0):
 def prior_E(E, p=0.5):
     return ((1 - p) ** E) * p
 
+"""
 # Define the posterior function (likelihood * prior)
 def posterior_1d(param1, data, lambda1=1.0):
     return likelihood(data, param1, 0) * prior_1d(param1, lambda1)
+"""
 
 def posterior_1d_linear(param1, data, lambda1=1.0):
     return likelihood(data, 0, 0) * prior_1d(param1, lambda1)
 
+"""
 # Define the posterior function (likelihood * prior)
 def posterior_2d(param1, param2, data, lambda1=1.0, lambda2=1.0):
     return likelihood(data, param1, param2) * prior_2d(param1, param2, lambda1, lambda2)
+"""
+
+def posterior_1d(param1, data, lambda1=1.0):
+    # Vectorize the computation
+    vectorized_likelihood = np.vectorize(lambda p: likelihood(data, p, 0))
+    vectorized_prior = np.vectorize(lambda p: prior_1d(p, lambda1))
+    return vectorized_likelihood(param1) * vectorized_prior(param1)
+
+def posterior_2d(param1, param2, data, lambda1=1.0, lambda2=1.0):
+    """
+    Compute the posterior for 2D parameters in a vectorized manner.
+    
+    Args:
+        param1: Array of parameter values for theta.
+        param2: Array of parameter values for delta.
+        data: Data tuple (Xr, tx, E, tau).
+        lambda1: Prior parameter for theta.
+        lambda2: Prior parameter for delta.
+
+    Returns:
+        Array of posterior values for each (param1, param2) pair.
+    """
+    # Ensure param1 and param2 are NumPy arrays
+    param1 = np.atleast_1d(param1)
+    param2 = np.atleast_1d(param2)
+    
+    # Create a grid of param1 and param2 values
+    param1_grid, param2_grid = np.meshgrid(param1, param2, indexing='ij')
+    
+    # Flatten the grids for vectorized computation
+    param1_flat = param1_grid.ravel()
+    param2_flat = param2_grid.ravel()
+    
+    # Compute likelihood and prior for all (param1, param2) pairs
+    likelihood_vals = np.array([likelihood(data, p1, p2) for p1, p2 in zip(param1_flat, param2_flat)])
+    prior_vals = prior_2d(param1_flat, param2_flat, lambda1, lambda2)
+    
+    # Reshape the results back to the grid shape
+    posterior_vals = likelihood_vals * prior_vals
+    return posterior_vals.reshape(param1_grid.shape)
 
 # Function to marginalize the posterior over the parameter space
 def marginalize_likelihood_1d(data, param_range, lambda_=1.0):
@@ -60,6 +103,48 @@ def marginalize_likelihood_2d(data, param1_range, param2_range, lambda1=1.0, lam
         epsrel=INTEGRATION_TOL, epsabs=INTEGRATION_TOL
     )
     return integral, error
+
+def marginalize_likelihood_1d_trapezoidal(data, param_range, lambda_=1.0, resolution=10, integrand=posterior_1d):
+    """
+    Marginalize the posterior over the parameter space using the trapezoidal rule (1D).
+
+    Args:
+        data: Data tuple.
+        param_range: Tuple specifying the range of the parameter (min, max).
+        lambda_: Prior parameter.
+        resolution: Number of points for the trapezoidal rule.
+
+    Returns:
+        Integral value.
+    """
+    param_vals = np.linspace(param_range[0], param_range[1], resolution)
+    posterior_vals = integrand(param_vals, data, lambda_)
+    integral = np.trapz(posterior_vals, x=param_vals)
+
+    return integral, None
+
+def marginalize_likelihood_2d_trapezoidal(data, param1_range, param2_range, lambda1=1.0, lambda2=1.0, resolution=10):
+    """
+    Marginalize the posterior over the parameter space using the trapezoidal rule (2D).
+
+    Args:
+        data: Data tuple.
+        param1_range: Tuple specifying the range of the first parameter (min, max).
+        param2_range: Tuple specifying the range of the second parameter (min, max).
+        lambda1: Prior parameter for the first parameter.
+        lambda2: Prior parameter for the second parameter.
+        resolution: Number of points along each axis for the trapezoidal rule.
+
+    Returns:
+        Integral value.
+    """
+    param1_vals = np.linspace(param1_range[0], param1_range[1], resolution)
+    param2_vals = np.linspace(param2_range[0], param2_range[1], resolution)
+
+    posterior_vals = np.nan_to_num(posterior_2d(param1_vals, param2_vals, data, lambda1, lambda2), nan=0.0)
+    integral = np.trapz(np.trapz(posterior_vals, x=param2_vals, axis=1), x=param1_vals)
+
+    return integral, None
 
 def marginalize_likelihood_E(marginal_likelihood_func, data, param_range, lambda_=1.0, p=0.5):
     marginal_likelihood = 0
@@ -84,14 +169,15 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
     marginal_error_s = np.zeros(E_range[1] - E_range[0])
     marginal_error_ns = np.zeros(E_range[1] - E_range[0])
 
-    for E in embedding_dimensions:
+    for i, E in enumerate(embedding_dimensions):
         data_E = (data[0], data[1], E, data[2])
 
         # Marginalize the likelihood for SMap (null)
-        marginal_likelihood_s[E], marginal_error_s[E] = marginalize_likelihood_1d(data_E, theta_range, lambda1)
+        marginal_likelihood_s[i], marginal_error_s[i] = marginalize_likelihood_1d_trapezoidal(data_E, theta_range, lambda1)
 
         # Marginalize the likelihood for NSMap
-        marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
+        # marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
+        marginal_likelihood_ns[i], marginal_error_ns[i] = marginalize_likelihood_2d_trapezoidal(data_E, theta_range, delta_range, lambda1, lambda2)
 
     marginal_likelihood_s = np.dot(marginal_likelihood_s, prior_E(embedding_dimensions))
     marginal_error_s = np.sum(marginal_error_s)
@@ -149,14 +235,19 @@ def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), la
         marginal_error_s[idx] = 0  # No integration, so error is zero
 
         # Nonstationary: theta=0, marginalize over delta
-        def integrand(delta, *args):
+        def integrand(delta, lambda2):
             return likelihood(data_E, 0, delta) * prior_1d(delta, lambda2)
         
+        integral, error = marginalize_likelihood_1d_trapezoidal(data_E, delta_range, lambda_=lambda2, integrand=integrand)
+
+        """
         integral, error = quad(
             integrand,
             delta_range[0], delta_range[1],
             epsrel=INTEGRATION_TOL, epsabs=INTEGRATION_TOL
         )
+        """
+
         marginal_likelihood_ns[idx] = integral
         marginal_error_ns[idx] = error
 
