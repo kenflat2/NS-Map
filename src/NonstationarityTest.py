@@ -33,10 +33,16 @@ def prior_E(E, p=0.5):
 # Define the posterior function (likelihood * prior)
 def posterior_1d(param1, data, lambda1=1.0):
     return likelihood(data, param1, 0) * prior_1d(param1, lambda1)
-"""
 
 def posterior_1d_linear(param1, data, lambda1=1.0):
     return likelihood(data, 0, 0) * prior_1d(param1, lambda1)
+"""
+
+def posterior_1d_linear(param1, data, lambda1=1.0):
+    # Vectorize the computation
+    vectorized_likelihood = np.vectorize(lambda p: likelihood(data, 0, p))
+    vectorized_prior = np.vectorize(lambda p: prior_1d(p, lambda1))
+    return vectorized_likelihood(param1) * vectorized_prior(param1)
 
 """
 # Define the posterior function (likelihood * prior)
@@ -104,7 +110,7 @@ def marginalize_likelihood_2d(data, param1_range, param2_range, lambda1=1.0, lam
     )
     return integral, error
 
-def marginalize_likelihood_1d_trapezoidal(data, param_range, lambda_=1.0, resolution=10, integrand=posterior_1d):
+def marginalize_likelihood_1d_trapezoidal(data, param_range, lambda_=1.0, integrand=posterior_1d, resolution=10):
     """
     Marginalize the posterior over the parameter space using the trapezoidal rule (1D).
 
@@ -118,7 +124,7 @@ def marginalize_likelihood_1d_trapezoidal(data, param_range, lambda_=1.0, resolu
         Integral value.
     """
     param_vals = np.linspace(param_range[0], param_range[1], resolution)
-    posterior_vals = integrand(param_vals, data, lambda_)
+    posterior_vals = np.nan_to_num(integrand(param_vals, data, lambda_), nan=0.0)
     integral = np.trapz(posterior_vals, x=param_vals)
 
     return integral, None
@@ -155,7 +161,7 @@ def marginalize_likelihood_E(marginal_likelihood_func, data, param_range, lambda
         marginal_error += error
     return marginal_likelihood, marginal_error
 
-def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5, debug=False):
+def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5, debug=False, resolution=40):
 
     marginal_likelihood_s = 0
     marginal_error_s = 0
@@ -173,11 +179,11 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
         data_E = (data[0], data[1], E, data[2])
 
         # Marginalize the likelihood for SMap (null)
-        marginal_likelihood_s[i], marginal_error_s[i] = marginalize_likelihood_1d_trapezoidal(data_E, theta_range, lambda1)
+        marginal_likelihood_s[i], marginal_error_s[i] = marginalize_likelihood_1d_trapezoidal(data_E, theta_range, lambda_=lambda1, resolution=resolution)
 
         # Marginalize the likelihood for NSMap
         # marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
-        marginal_likelihood_ns[i], marginal_error_ns[i] = marginalize_likelihood_2d_trapezoidal(data_E, theta_range, delta_range, lambda1, lambda2)
+        marginal_likelihood_ns[i], marginal_error_ns[i] = marginalize_likelihood_2d_trapezoidal(data_E, theta_range, delta_range, lambda1=lambda1, lambda2=lambda2, resolution=resolution)
 
     marginal_likelihood_s = np.dot(marginal_likelihood_s, prior_E(embedding_dimensions))
     marginal_error_s = np.sum(marginal_error_s)
@@ -206,9 +212,9 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
 #   - log_bayes_factor: log of the Bayes Factor between stationary and nonstationary model (float)
 #   - significance_level: significance level of the test (float)
 #   - error_bf: error estimate for the Bayes Factor (float)
-def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, lambda2=1.0, p=0.5):
+def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, lambda2=1.0, p=0.5, resolution = 40):
     # Compute the Bayes Factor
-    bayes_factor, error_bf = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1, lambda2, p)
+    bayes_factor, error_bf = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=lambda1, lambda2=lambda2, p=p, resolution=resolution, debug=False)
 
     # Compute the log Bayes Factor
     evidence = 10 * np.log10(bayes_factor)
@@ -218,7 +224,7 @@ def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E
 
     return evidence, significance_level, error_bf
 
-def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda2=1.0, p=0.5, debug=False):
+def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda2=1.0, p=0.5, debug=False, resolution=20):
     # Compute the Bayes Factor for the linear case
     embedding_dimensions = np.arange(E_range[0], E_range[1])
 
@@ -235,10 +241,10 @@ def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), la
         marginal_error_s[idx] = 0  # No integration, so error is zero
 
         # Nonstationary: theta=0, marginalize over delta
-        def integrand(delta, lambda2):
-            return likelihood(data_E, 0, delta) * prior_1d(delta, lambda2)
+        # def likelihood_linear(delta, data_E, lambda2):
+        #     return likelihood(data_E, 0, delta) * prior_1d(delta, lambda2)
         
-        integral, error = marginalize_likelihood_1d_trapezoidal(data_E, delta_range, lambda_=lambda2, integrand=integrand)
+        integral, error = marginalize_likelihood_1d_trapezoidal(data_E, delta_range, lambda_=lambda2, integrand=posterior_1d_linear, resolution=resolution)
 
         """
         integral, error = quad(
@@ -268,9 +274,9 @@ def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), la
 # Function to perform the nonstationarity test with autoregressive model structure
 # Meant to emulate classical nonstationarity tests like Dickey-Fuller
 # Inputs:
-def nonstationarity_test_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, p=0.5):
+def nonstationarity_test_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda2=1.0, p=0.5, resolution=20):
     # Compute the Bayes Factor for the linear case
-    bayes_factor, error_bf = compute_bayes_factor_linear(data, delta_range, E_range, lambda1, p, False)
+    bayes_factor, error_bf = compute_bayes_factor_linear(data, delta_range=delta_range, E_range=E_range, lambda2=lambda2, p=p, debug=False, resolution=resolution)
 
     # Compute the log Bayes Factor
     evidence = 10 * np.log10(bayes_factor)

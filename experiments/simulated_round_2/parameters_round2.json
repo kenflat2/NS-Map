@@ -32,12 +32,13 @@
             }
         }
     ],
-    "theta_range" : [0.0, 4.0],
-    "delta_range" : [0.0, 4.0],
+    "theta_range" : [0.0, 150.0],
+    "delta_range" : [0.0, 150.0],
     "E_range" : [0, 5],
-    "lambda1" : 1.0,
-    "lambda2" : 1.0,
-    "p" : 0.5,
+    "lambda1" : 1e-2,
+    "lambda2" : 1e-2,
+    "p" : 0.368,
     "tau" : 1,
-    "N_replicates": 50
+    "N_replicates": 50,
+    "resolution": 20
 }

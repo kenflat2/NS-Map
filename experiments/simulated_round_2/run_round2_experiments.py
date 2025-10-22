@@ -33,6 +33,7 @@ def nonstationary_test_experiment(f, experiment_params, filename):
 
     tau = params["tau"]
     N_replicates = params["N_replicates"]
+    resolution = params["resolution"]
 
     default_length = experiment_params["default_length"]
     default_observation_noise = experiment_params["default_obs_noise"]
@@ -61,7 +62,8 @@ def nonstationary_test_experiment(f, experiment_params, filename):
                     E_range=params["E_range"],
                     lambda1=params["lambda1"],
                     lambda2=params["lambda2"],
-                    p=params["p"]
+                    p=params["p"],
+                    resolution=resolution
                 )
                 row = [i, length, default_observation_noise, default_process_noise, evidence, significance_level, bayes_factor_error]
                 write_to_file(filename, row)
@@ -79,7 +81,8 @@ def nonstationary_test_experiment(f, experiment_params, filename):
                     E_range=params["E_range"],
                     lambda1=params["lambda1"],
                     lambda2=params["lambda2"],
-                    p=params["p"]
+                    p=params["p"],
+                    resolution=resolution
                 )
                 row = [i, default_length, observation_noise, default_process_noise, evidence, significance_level, bayes_factor_error]
                 write_to_file(filename, row)
@@ -97,7 +100,8 @@ def nonstationary_test_experiment(f, experiment_params, filename):
                     E_range=params["E_range"],
                     lambda1=params["lambda1"],
                     lambda2=params["lambda2"],
-                    p=params["p"]
+                    p=params["p"],
+                    resolution=resolution
                 )
                 row = [i, default_length, default_observation_noise, process_noise, evidence, significance_level, bayes_factor_error]
                 write_to_file(filename, row)

@@ -29,6 +29,7 @@ def write_to_file(filename, row):
 # Pass experiment_params as an argument
 def nonstationary_test_experiment(f, filename, experiment_params):
     tau = params["tau"]
+    resolution = params["resolution"]
     t = np.linspace(0, 1, experiment_params["time_series_length"])
     N_replicates = int(params["N_replicates"])
 
@@ -44,15 +45,17 @@ def nonstationary_test_experiment(f, filename, experiment_params):
             E_range=params["E_range"],
             lambda1=params["lambda1"],
             lambda2=params["lambda2"],
-            p=params["p"]
+            p=params["p"],
+            resolution=resolution
         )
 
         evidence_linear, significance_level_linear, bayes_factor_error_linear = nt.nonstationarity_test_linear(
             (system, t, tau),
             delta_range=params["delta_range"],
             E_range=params["E_range"],
-            lambda1=params["lambda1"],
-            p=params["p"]
+            lambda2=params["lambda2"],
+            p=params["p"],
+            resolution=resolution
         )
 
         posterior_weighted_theta, posterior_weighted_delta = nse.compute_posterior_weighted_parameters(
@@ -62,7 +65,8 @@ def nonstationary_test_experiment(f, filename, experiment_params):
             E_range=params["E_range"],
             lambda1=params["lambda1"],
             lambda2=params["lambda2"],
-            p=params["p"]
+            p=params["p"],
+            resolution=resolution
         )
 
         results.append(np.array([evidence, significance_level, bayes_factor_error,

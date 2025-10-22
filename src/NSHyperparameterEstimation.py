@@ -4,7 +4,7 @@ from scipy.integrate import dblquad
 from scipy.integrate import quad
 from src.NonstationarityTest import prior_E, posterior_2d
 
-def compute_posterior_weighted_parameters(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5):
+def compute_posterior_weighted_parameters(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5, resolution=20):
 
     numerator1 = 0
     numerator2 = 0
@@ -18,12 +18,12 @@ def compute_posterior_weighted_parameters(data, theta_range, delta_range, E_rang
         # posterior_weights = posterior_integrands / np.sum(posterior_integrands)
 
         # Integrate the posterior times theta
-        numerator1 += posterior_weighted_function_grid(lambda theta, delta: theta, data_E, theta_range, delta_range, lambda1, lambda2) * prior_E(E, p)
+        numerator1 += posterior_weighted_function_grid(lambda theta, delta: theta, data_E, theta_range, delta_range, lambda1=lambda1, lambda2=lambda2, resolution=resolution) * prior_E(E, p)
 
         # Integrate the posterior times delta
-        numerator2 += posterior_weighted_function_grid(lambda theta, delta: delta, data_E, theta_range, delta_range, lambda1, lambda2) * prior_E(E, p)
+        numerator2 += posterior_weighted_function_grid(lambda theta, delta: delta, data_E, theta_range, delta_range, lambda1=lambda1, lambda2=lambda2, resolution=resolution) * prior_E(E, p)
 
-        Z += posterior_weighted_function_grid(lambda theta, delta: 1, data_E, theta_range, delta_range, lambda1, lambda2) * prior_E(E, p)
+        Z += posterior_weighted_function_grid(lambda theta, delta: 1, data_E, theta_range, delta_range, lambda1=lambda1, lambda2=lambda2, resolution=resolution) * prior_E(E, p)
 
     return numerator1 / Z, numerator2 / Z
 

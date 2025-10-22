@@ -72,5 +72,6 @@
     "lambda2" : 1e-2,
     "p" : 0.5,
     "tau" : 1,
-    "N_replicates": 2
+    "N_replicates": 2,
+    "resolution": 20
 }

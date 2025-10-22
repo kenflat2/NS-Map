@@ -2,7 +2,7 @@ import os
 import sys
 
 # Hard code the root directory
-root = '/home/kenflat2/NS-Map/' # os.path.dirname(os.path.dirname(experiment_directory))  # Parent directory of the current file
+root = '/net/flood/home/kengee/NS-Map/NS-Map' # '/home/kenflat2/NS-Map/' # os.path.dirname(os.path.dirname(experiment_directory))  # Parent directory of the current file
 sys.path.append(root)
 # experiment_directory = os.path.join(ROOT_DIR)
 
@@ -34,7 +34,7 @@ def generate_logistic(tlen, r_base, r_slope, observation_noise, process_noise):
         z = rand.normal(0, process_noise)
         ts[i+1] = 1 / (1 + np.exp(z - u))
 
-    return ts[:,None] + rand.normal(0, observation_noise, tlen)[:, None]
+    return standardize(ts[:,None]) + rand.normal(0, observation_noise, tlen)[:, None]
 
 def FoodChainP(xi, t, b1):
     (x,y,z)=xi
@@ -76,4 +76,4 @@ def generate_food_chain(tlen, b1_base, b1_trend, observation_noise, process_nois
     for i in range(tlen-1):
         ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1] * np.exp(rand.normal(0,process_noise))
 
-    return ts[:, 0, None] + rand.normal(0, observation_noise, (tlen, 1))
+    return standardize(ts[:, 0, None]) + rand.normal(0, observation_noise, (tlen, 1))
