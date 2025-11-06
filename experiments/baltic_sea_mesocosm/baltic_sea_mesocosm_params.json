@@ -1,0 +1,16 @@
+{
+  "data_csv": "datasets/baltic_sea_mesocosm_transformed.csv",
+  "output_dir": "results/baltic_sea_multiwindow",
+  "year_steps": 27,
+  "tau": 1,
+  "h": 0,
+  "n_rows": 351,
+  "E_range" : [0, 7],
+  "lambda1" : 1e-2,
+  "lambda2" : 1e-2,
+  "p" : 0.5,
+  "N_replicates": 50,
+  "resolution": 20,
+  "theta_range": [0.0, 150.0],
+  "delta_range": [0.0, 20.0]
+}

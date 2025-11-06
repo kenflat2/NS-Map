@@ -16,7 +16,33 @@ def likelihood(data, theta, delta):
     # theta = np.exp(theta) - 1
     # delta = np.exp(delta) - 1
 
-    return np.exp(ns.logLikelihood(Xemb, Y, tx, theta, delta))
+    # Support scalar or array input for theta and delta
+    if np.isscalar(theta) and np.isscalar(delta):
+        log_likelihood = ns.logLikelihood(Xemb, Y, tx, theta, delta)
+        return np.exp(log_likelihood)
+    else:
+        # Broadcast theta and delta to same shape
+        theta = np.atleast_1d(theta)
+        delta = np.atleast_1d(delta)
+        # If both are 1D and same length, treat as pairs
+        if theta.shape == delta.shape:
+            log_likelihoods = np.array([ns.logLikelihood(Xemb, Y, tx, th, dl) for th, dl in zip(theta, delta)])
+        else:
+            # If one is scalar, broadcast
+            if theta.size == 1:
+                log_likelihoods = np.array([ns.logLikelihood(Xemb, Y, tx, theta.item(), dl) for dl in delta])
+            elif delta.size == 1:
+                log_likelihoods = np.array([ns.logLikelihood(Xemb, Y, tx, th, delta.item()) for th in theta])
+            else:
+                # If both are arrays but different shapes, use meshgrid
+                theta_grid, delta_grid = np.meshgrid(theta, delta, indexing='ij')
+                log_likelihoods = np.empty(theta_grid.shape)
+                for i in range(theta_grid.shape[0]):
+                    for j in range(theta_grid.shape[1]):
+                        log_likelihoods[i, j] = ns.logLikelihood(Xemb, Y, tx, theta_grid[i, j], delta_grid[i, j])
+        # Numerical stability: shift by max
+        log_likelihoods = log_likelihoods - np.max(log_likelihoods)
+        return np.exp(log_likelihoods)
 
 # Define the exponentially decreasing prior function
 def prior_1d(theta, lambda_t=1.0):
@@ -82,7 +108,7 @@ def posterior_2d(param1, param2, data, lambda1=1.0, lambda2=1.0):
     param2_flat = param2_grid.ravel()
     
     # Compute likelihood and prior for all (param1, param2) pairs
-    likelihood_vals = np.array([likelihood(data, p1, p2) for p1, p2 in zip(param1_flat, param2_flat)])
+    likelihood_vals = likelihood(data, param1_flat, param2_flat)
     prior_vals = prior_2d(param1_flat, param2_flat, lambda1, lambda2)
     
     # Reshape the results back to the grid shape
@@ -144,13 +170,21 @@ def marginalize_likelihood_2d_trapezoidal(data, param1_range, param2_range, lamb
     Returns:
         Integral value.
     """
+    posterior_vals, param1_vals, param2_vals = posterior_grid_evaluation(data, param1_range, param2_range, lambda1, lambda2) # np.nan_to_num(posterior_2d(param1_vals, param2_vals, data, lambda1, lambda2), nan=0.0)
+    integral = np.trapz(np.trapz(posterior_vals, x=param2_vals, axis=1), x=param1_vals)
+
+    return integral, None
+
+def posterior_grid_evaluation(data, param1_range, param2_range, lambda1=1.0, lambda2=1.0, resolution=10):
+    """
+    
+    """
     param1_vals = np.linspace(param1_range[0], param1_range[1], resolution)
     param2_vals = np.linspace(param2_range[0], param2_range[1], resolution)
 
     posterior_vals = np.nan_to_num(posterior_2d(param1_vals, param2_vals, data, lambda1, lambda2), nan=0.0)
-    integral = np.trapz(np.trapz(posterior_vals, x=param2_vals, axis=1), x=param1_vals)
 
-    return integral, None
+    return posterior_vals, param1_vals, param2_vals
 
 def marginalize_likelihood_E(marginal_likelihood_func, data, param_range, lambda_=1.0, p=0.5):
     marginal_likelihood = 0

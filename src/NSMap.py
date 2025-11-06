@@ -171,7 +171,7 @@ def logLikelihood(X, Y, tx, theta, delta, returnSeries=False):
     lnL = (-n/2)*(np.log(mean_squared_residuals) + np.log(2*np.pi) + 1 )
 
     # bic = BIC(lnL, k, n)
- 
+
     if returnSeries:
         return (lnL, Yhat)
     else:
