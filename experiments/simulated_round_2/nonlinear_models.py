@@ -58,8 +58,9 @@ def generate_food_chain(tlen, b1_base, b1_trend, observation_noise, process_nois
     settlingTime = model_params["settling_time"]
     end = model_params["time_per_step"] * tlen
     reduction = model_params["reduction"]
+    default_len = model_params["default_length"]
 
-    b1 = lambda t: b1_base + b1_trend * t / end
+    b1 = lambda t: b1_base + (tlen / default_len) * b1_trend * t / end
 
     x0 = np.ones(3)
 

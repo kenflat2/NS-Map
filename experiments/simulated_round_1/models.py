@@ -1,10 +1,16 @@
 import os
 import sys
 
+# Hard code the root directory
+root = '/net/flood/home/kengee/NS-Map/NS-Map' # '/home/kenflat2/NS-Map/' # os.path.dirname(os.path.dirname(experiment_directory))  # Parent directory of the current file
+sys.path.append(root)
+
+"""
 # Dynamically set the root directory
 root = os.path.dirname(os.path.abspath(__name__))  # Current file's directory
 experiment_directory = os.path.join(root, "experiments", "simulated_round_1")
 sys.path.append(root)
+"""
 
 import json
 import numpy as np
@@ -13,6 +19,8 @@ from pathlib import Path
 
 from utils.TimeseriesToolkit import standardize
 from scipy.integrate import odeint
+
+experiment_directory = os.path.join(root, "experiments", "simulated_round_1")
 
 # experiment_directory = "/experiments/simulated_round_1/"
 
@@ -123,8 +131,9 @@ def generate_food_chain():
 
     for i in range(tlen-1):
         ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1] # * np.exp(rand.normal(0,process_noise))
-
-    return ts + rand.normal(0, observation_noise, (tlen, len(x0)))
+    
+    return standardize(ts[:, 0, None]) + rand.normal(0, observation_noise, (tlen, 1))
+    # return ts + rand.normal(0, observation_noise, (tlen, len(x0)))
 
 def generate_food_chain_nonstat():
     model_params = params["experiments"][5]["parameters"]
@@ -155,4 +164,5 @@ def generate_food_chain_nonstat():
     for i in range(tlen-1):
         ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1]
 
-    return ts + rand.normal(0, observation_noise, (tlen, len(x0)))
+    return standardize(ts[:, 0, None]) + rand.normal(0, observation_noise, (tlen, 1))
+    # return ts + rand.normal(0, observation_noise, (tlen, len(x0)))

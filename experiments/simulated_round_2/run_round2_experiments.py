@@ -47,7 +47,6 @@ def nonstationary_test_experiment(f, experiment_params, filename):
     header = ["nonstationary level", "time series length", "observation noise", "process noise", "evidence", "significance_level", "bayes factor error"]
     write_to_file(filename, header)
 
-
     for rep in range(N_replicates):
         print(f"Replication {rep + 1}/{N_replicates}")
         # Time Series Length
@@ -110,6 +109,10 @@ if __name__ == "__main__":
     # Run the simulation for the stationary model
 
     for experiment in params["experiments"]:
+        if experiment["name"] == "food_chain":
+            print("Skipping Food Chain Experiment")
+            continue
+
         dynamic_function_name = "generate_" + experiment["name"]
         dynamic_function = getattr(experiments.simulated_round_2.nonlinear_models, dynamic_function_name)
 

@@ -5,11 +5,11 @@
             "description": "Nonlinear discrete time system.",
             "parameters": {
                 "nonstat_param_base": 4.0,
-                "nonstat_param_slope": [0.0, -0.25, -1.0],
+                "nonstat_param_slope": [0.0, -0.5, -1.0],
                 "obs_noise" : [0.0, 0.1, 0.2, 0.3],
                 "process_noise": [0.0, 0.1, 0.2],
                 "time_series_length": [50, 100, 200],
-                "default_length": 100,
+                "default_length": 200,
                 "default_obs_noise": 0.1,
                 "default_process_noise": 0.1
             }
@@ -18,22 +18,22 @@
             "name": "food_chain",
             "description": "Nonlinear continuous time system.",
             "parameters": {
-                "nonstat_param_base": 3,
-                "nonstat_param_slope": [0.0, 1.0, 4.0],
+                "nonstat_param_base": 2.5,
+                "nonstat_param_slope": [0.0, 2.25, 4.5],
                 "obs_noise" : [0.0, 0.1, 0.2, 0.3],
-                "process_noise": [0.0, 0.1, 0.2],
-                "time_series_length": [50, 100, 200],
-                "default_length": 100,
+                "process_noise": [0.0, 0.02, 0.04],
+                "time_series_length": [100, 200, 400],
+                "default_length": 400,
                 "default_obs_noise": 0.1,
-                "default_process_noise": 0.1,
+                "default_process_noise": 0.02,
                 "reduction": 256,
                 "settling_time": 10000,
                 "time_per_step" : 10
             }
         }
     ],
-    "theta_range" : [0.0, 150.0],
-    "delta_range" : [0.0, 150.0],
+    "theta_range" : [0.0, 10.0],
+    "delta_range" : [0.0, 20.0],
     "E_range" : [0, 5],
     "lambda1" : 1e-2,
     "lambda2" : 1e-2,

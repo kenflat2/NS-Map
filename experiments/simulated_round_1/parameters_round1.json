@@ -6,7 +6,9 @@
             "parameters": {
                 "obs_noise" : 0.1,
                 "period" : 12,
-                "time_series_length": 200
+                "time_series_length": 200,
+                "theta_range" : [0.0, 150.0],
+                "delta_range" : [0.0, 150.0]
             }
         },
         {
@@ -17,7 +19,9 @@
                 "nonstat_param_slope": -1.0,
                 "period" : 12,
                 "obs_noise" : 0.1,
-                "time_series_length": 200
+                "time_series_length": 200,
+                "theta_range" : [0.0, 150.0],
+                "delta_range" : [0.0, 150.0]
             }
         },
         {
@@ -26,7 +30,9 @@
             "parameters": {
                 "param_base" : 4.0,
                 "obs_noise" : 0.1,
-                "time_series_length": 200
+                "time_series_length": 200,
+                "theta_range" : [0.0, 4.0],
+                "delta_range" : [0.0, 15.0]
             }
         },
         {
@@ -36,7 +42,9 @@
                 "nonstat_param_base": 4.0,
                 "nonstat_param_slope": -1.0,
                 "obs_noise" : 0.1,
-                "time_series_length": 200
+                "time_series_length": 200,
+                "theta_range" : [0.0, 4.0],
+                "delta_range" : [0.0, 11.0]
             }
         },
         {
@@ -48,30 +56,32 @@
                 "time_series_length": 200,
                 "reduction": 256,
                 "settling_time": 10000,
-                "time_per_step" : 10
+                "time_per_step" : 10,
+                "theta_range" : [0.0, 7.0],
+                "delta_range" : [0.0, 7.0]
             }
         },
         {
             "name": "food_chain_nonstat",
             "description": "Nonlinear continuous time system, nonstationary.",
             "parameters": {
-                "nonstat_param_base": 4.0,
-                "nonstat_param_slope": 3.0,
+                "nonstat_param_base": 3.0,
+                "nonstat_param_slope": 4.0,
                 "obs_noise" : 0.1,
                 "time_series_length": 200,
                 "reduction": 256,
                 "settling_time": 10000,
-                "time_per_step" : 10
+                "time_per_step" : 10,
+                "theta_range" : [0.0, 7.0],
+                "delta_range" : [0.0, 7.0]
             }
         }
     ],
-    "theta_range" : [0.0, 150.0],
-    "delta_range" : [0.0, 150.0],
     "E_range" : [0, 6],
     "lambda1" : 1e-2,
     "lambda2" : 1e-2,
     "p" : 0.5,
     "tau" : 1,
-    "N_replicates": 2,
+    "N_replicates": 50,
     "resolution": 20
 }
