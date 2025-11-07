@@ -155,36 +155,52 @@ def marginalize_likelihood_1d_trapezoidal(data, param_range, lambda_=1.0, integr
 
     return integral, None
 
-def marginalize_likelihood_2d_trapezoidal(data, param1_range, param2_range, lambda1=1.0, lambda2=1.0, resolution=10):
-    """
-    Marginalize the posterior over the parameter space using the trapezoidal rule (2D).
+# Shared helper for grid-based marginalization
+def _marginalize_grid(log_likelihoods, prior_grid, x_axes, sum_axis):
+    log_likelihoods = log_likelihoods - np.max(log_likelihoods)
+    likelihoods = np.exp(log_likelihoods)
+    posterior_grid = likelihoods * prior_grid
+    for axis, x in x_axes:
+        posterior_grid = np.trapz(posterior_grid, x=x, axis=axis)
+    marginal = np.sum(posterior_grid, axis=sum_axis)
+    return marginal
 
-    Args:
-        data: Data tuple.
-        param1_range: Tuple specifying the range of the first parameter (min, max).
-        param2_range: Tuple specifying the range of the second parameter (min, max).
-        lambda1: Prior parameter for the first parameter.
-        lambda2: Prior parameter for the second parameter.
-        resolution: Number of points along each axis for the trapezoidal rule.
+# Build log likelihood grid for E, theta, delta (or delta=0 for S-map)
+def _build_log_likelihood_grid(Xr, tx, E_range, theta_range, delta_range, tau, delta_is_zero=False):
+    E_vals = np.arange(E_range[0], E_range[1]+1)
+    theta_vals = np.array(theta_range)
+    delta_vals = np.array(delta_range) if not delta_is_zero else np.array([0])
+    grid_shape = (len(E_vals), len(theta_vals), len(delta_vals))
+    log_likelihoods = np.empty(grid_shape)
+    for i, E in enumerate(E_vals):
+        Xemb, Y, tx_ = ns.delayEmbed(Xr, E, tau, t=tx)
+        for j, th in enumerate(theta_vals):
+            for k, dl in enumerate(delta_vals):
+                log_likelihoods[i, j, k] = ns.logLikelihood(Xemb, Y, tx_, th, dl)
+    return log_likelihoods, E_vals, theta_vals, delta_vals
 
-    Returns:
-        Integral value.
-    """
-    posterior_vals, param1_vals, param2_vals = posterior_grid_evaluation(data, param1_range, param2_range, lambda1, lambda2) # np.nan_to_num(posterior_2d(param1_vals, param2_vals, data, lambda1, lambda2), nan=0.0)
-    integral = np.trapz(np.trapz(posterior_vals, x=param2_vals, axis=1), x=param1_vals)
+# Marginalize over E, theta, delta (NSMap)
+def marginalize_likelihood_3d_trapezoidal(data, E_range, theta_range, delta_range, lambda1=1.0, lambda2=1.0, p_E=0.5, resolution=10):
+    Xr, tx, tau = data
+    log_likelihoods, E_vals, theta_vals, delta_vals = _build_log_likelihood_grid(Xr, tx, E_range, theta_range, delta_range, tau)
+    prior_E_vals = np.array([prior_E(E, p_E) for E in E_vals])
+    prior_theta_vals = np.array([prior_1d(th, lambda1) for th in theta_vals])
+    prior_delta_vals = np.array([prior_1d(dl, lambda2) for dl in delta_vals])
+    prior_grid = prior_E_vals[:, None, None] * prior_theta_vals[None, :, None] * prior_delta_vals[None, None, :]
+    trapz_axes = [(1, theta_vals), (2, delta_vals)]
+    marginal = _marginalize_grid(log_likelihoods, prior_grid, trapz_axes, sum_axis=0)
+    return marginal, None
 
-    return integral, None
-
-def posterior_grid_evaluation(data, param1_range, param2_range, lambda1=1.0, lambda2=1.0, resolution=10):
-    """
-    
-    """
-    param1_vals = np.linspace(param1_range[0], param1_range[1], resolution)
-    param2_vals = np.linspace(param2_range[0], param2_range[1], resolution)
-
-    posterior_vals = np.nan_to_num(posterior_2d(param1_vals, param2_vals, data, lambda1, lambda2), nan=0.0)
-
-    return posterior_vals, param1_vals, param2_vals
+# Marginalize over E and theta (SMap)
+def marginalize_likelihood_smap_trapezoidal(data, E_range, theta_range, lambda1=1.0, p_E=0.5):
+    Xr, tx, tau = data
+    log_likelihoods, E_vals, theta_vals, _ = _build_log_likelihood_grid(Xr, tx, E_range, theta_range, [0], tau, delta_is_zero=True)
+    prior_E_vals = np.array([prior_E(E, p_E) for E in E_vals])
+    prior_theta_vals = np.array([prior_1d(th, lambda1) for th in theta_vals])
+    prior_grid = prior_E_vals[:, None] * prior_theta_vals[None, :]
+    trapz_axes = [(1, theta_vals)]
+    marginal = _marginalize_grid(log_likelihoods.squeeze(), prior_grid, trapz_axes, sum_axis=0)
+    return marginal, None
 
 def marginalize_likelihood_E(marginal_likelihood_func, data, param_range, lambda_=1.0, p=0.5):
     marginal_likelihood = 0
@@ -197,6 +213,11 @@ def marginalize_likelihood_E(marginal_likelihood_func, data, param_range, lambda
 
 def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5, debug=False, resolution=40):
 
+    """
+    Compute the Bayes Factor between stationary and nonstationary models.
+    """
+
+    """
     marginal_likelihood_s = 0
     marginal_error_s = 0
     marginal_likelihood_ns = 0
@@ -217,21 +238,22 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
 
         # Marginalize the likelihood for NSMap
         # marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
-        marginal_likelihood_ns[i], marginal_error_ns[i] = marginalize_likelihood_2d_trapezoidal(data_E, theta_range, delta_range, lambda1=lambda1, lambda2=lambda2, resolution=resolution)
+    
+    """
 
-    marginal_likelihood_s = np.dot(marginal_likelihood_s, prior_E(embedding_dimensions))
-    marginal_error_s = np.sum(marginal_error_s)
-    marginal_likelihood_ns = np.dot(marginal_likelihood_ns, prior_E(embedding_dimensions))
-    marginal_error_ns = np.sum(marginal_error_ns)
+    # Use new 3D marginalization
+    marginal_likelihood_ns = marginalize_likelihood_3d_trapezoidal(data, E_range, theta_range, delta_range, lambda1=lambda1, lambda2=lambda2, p_E=p, resolution=resolution)
+    marginal_likelihood_s = marginalize_likelihood_smap_trapezoidal(data, E_range, theta_range, lambda1=lambda1, p_E=p)
 
     # Compute the Bayes Factor
     bayes_factor = marginal_likelihood_ns / marginal_likelihood_s
-    error_bf = marginal_error_s / marginal_likelihood_s + marginal_error_ns / marginal_likelihood_ns
+    # error_bf = marginal_error_s / marginal_likelihood_s + marginal_error_ns / marginal_likelihood_ns
     if debug:
-        return bayes_factor, error_bf, marginal_likelihood_s, marginal_error_s, marginal_likelihood_ns, marginal_error_ns
+
+        return bayes_factor, marginal_likelihood_s, marginal_likelihood_ns
     else:
         # Return the Bayes Factor and error estimate
-        return bayes_factor, error_bf
+        return bayes_factor
 
 # Function to perform the nonstationarity test
 # Inputs: 
