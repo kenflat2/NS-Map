@@ -25,7 +25,7 @@ def process_species(i, species, table, params, lengths, maxLen, output_dir):
         for start in np.arange(0, maxLen - length+1, step=params["year_steps"]):
             ts_chunk = ts[start:length+start]
             t = np.linspace(0, 1, length)
-            evidence, significance_level, bayes_factor_error = nt.nonstationarity_test(
+            evidence, significance_level = nt.nonstationarity_test(
                 (ts_chunk, t, tau),
                 theta_range=params["theta_range"],
                 delta_range=params["delta_range"],
@@ -47,7 +47,7 @@ def process_species(i, species, table, params, lengths, maxLen, output_dir):
             )
             out_path = os.path.join(output_dir, f"{species}_time_window.csv")
             with open(out_path, 'a') as f:
-                f.write(f"{int(length)},{int(start)},{evidence},{significance_level},{bayes_factor_error},{posterior_weighted_theta},{posterior_weighted_delta}\n")
+                f.write(f"{int(length)},{int(start)},{evidence},{significance_level},{posterior_weighted_theta},{posterior_weighted_delta}\n")
             tally += 1
             print(f"{species}: {tally}")
 

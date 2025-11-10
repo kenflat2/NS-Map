@@ -180,7 +180,7 @@ def _build_log_likelihood_grid(Xr, tx, E_range, theta_range, delta_range, tau, d
     return log_likelihoods, E_vals, theta_vals, delta_vals
 
 # Marginalize over E, theta, delta (NSMap)
-def marginalize_likelihood_3d_trapezoidal(data, E_range, theta_range, delta_range, lambda1=1.0, lambda2=1.0, p_E=0.5, resolution=10):
+def marginalize_likelihood_nsmap_trapezoidal(data, E_range, theta_range, delta_range, lambda1=1.0, lambda2=1.0, p_E=0.5):
     Xr, tx, tau = data
     log_likelihoods, E_vals, theta_vals, delta_vals = _build_log_likelihood_grid(Xr, tx, E_range, theta_range, delta_range, tau)
     prior_E_vals = np.array([prior_E(E, p_E) for E in E_vals])
@@ -217,42 +217,46 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
     Compute the Bayes Factor between stationary and nonstationary models.
     """
 
-    """
-    marginal_likelihood_s = 0
-    marginal_error_s = 0
-    marginal_likelihood_ns = 0
-    marginal_error_ns = 0
+    theta_vals = np.linspace(theta_range[0], theta_range[1], resolution)
+    delta_vals = np.linspace(delta_range[0], delta_range[1], resolution)
+    E_vals = np.arange(E_range[0], E_range[1]+1)
 
-    embedding_dimensions = np.arange(E_range[0], E_range[1])
+    # Build log likelihood grids for both NSMap and SMap
+    Xr, tx, tau = data
+    log_lik_nsmap, E_vals, theta_vals, delta_vals = _build_log_likelihood_grid(Xr, tx, E_range, theta_vals, delta_vals, tau)
+    log_lik_smap, _, _, _ = _build_log_likelihood_grid(Xr, tx, E_range, theta_vals, [0], tau, delta_is_zero=True)
 
-    marginal_likelihood_s = np.zeros(E_range[1] - E_range[0])
-    marginal_likelihood_ns = np.zeros(E_range[1] - E_range[0])
-    marginal_error_s = np.zeros(E_range[1] - E_range[0])
-    marginal_error_ns = np.zeros(E_range[1] - E_range[0])
+    # Compute the maximum log likelihood over both grids
+    max_log_likelihood = np.maximum(log_lik_nsmap, log_lik_smap).max()
 
-    for i, E in enumerate(embedding_dimensions):
-        data_E = (data[0], data[1], E, data[2])
+    # Priors
+    prior_E_vals = np.array([prior_E(E, p) for E in E_vals])
+    prior_theta_vals = np.array([prior_1d(th, lambda1) for th in theta_vals])
+    prior_delta_vals = np.array([prior_1d(dl, lambda2) for dl in delta_vals])
+    prior_grid_nsmap = prior_E_vals[:, None, None] * prior_theta_vals[None, :, None] * prior_delta_vals[None, None, :]
+    prior_grid_smap = prior_E_vals[:, None] * prior_theta_vals[None, :]
 
-        # Marginalize the likelihood for SMap (null)
-        marginal_likelihood_s[i], marginal_error_s[i] = marginalize_likelihood_1d_trapezoidal(data_E, theta_range, lambda_=lambda1, resolution=resolution)
+    # Posterior grids (normalized for numerical stability)
+    post_grid_nsmap = np.exp(log_lik_nsmap - max_log_likelihood) * prior_grid_nsmap
+    post_grid_smap = np.exp(log_lik_smap.squeeze() - max_log_likelihood) * prior_grid_smap
 
-        # Marginalize the likelihood for NSMap
-        # marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
-    
-    """
+    # Marginalize over all parameters
+    marginal_nsmap = np.trapz(np.trapz(post_grid_nsmap, x=theta_vals, axis=1), x=delta_vals, axis=1)
+    marginal_nsmap = np.sum(marginal_nsmap)
+    marginal_smap = np.trapz(post_grid_smap, x=theta_vals, axis=1)
+    marginal_smap = np.sum(marginal_smap)
 
-    # Use new 3D marginalization
-    marginal_likelihood_ns = marginalize_likelihood_3d_trapezoidal(data, E_range, theta_range, delta_range, lambda1=lambda1, lambda2=lambda2, p_E=p, resolution=resolution)
-    marginal_likelihood_s = marginalize_likelihood_smap_trapezoidal(data, E_range, theta_range, lambda1=lambda1, p_E=p)
+    # Normalize
+    normalization = marginal_nsmap + marginal_smap
+    if normalization == 0:
+        normalization = 1e-12
+    marginal_nsmap /= normalization
+    marginal_smap /= normalization
 
-    # Compute the Bayes Factor
-    bayes_factor = marginal_likelihood_ns / marginal_likelihood_s
-    # error_bf = marginal_error_s / marginal_likelihood_s + marginal_error_ns / marginal_likelihood_ns
+    bayes_factor = marginal_nsmap / marginal_smap
     if debug:
-
-        return bayes_factor, marginal_likelihood_s, marginal_likelihood_ns
+        return bayes_factor, marginal_smap, marginal_nsmap
     else:
-        # Return the Bayes Factor and error estimate
         return bayes_factor
 
 # Function to perform the nonstationarity test
@@ -270,7 +274,7 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
 #   - error_bf: error estimate for the Bayes Factor (float)
 def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, lambda2=1.0, p=0.5, resolution = 40):
     # Compute the Bayes Factor
-    bayes_factor, error_bf = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=lambda1, lambda2=lambda2, p=p, resolution=resolution, debug=False)
+    bayes_factor = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=lambda1, lambda2=lambda2, p=p, resolution=resolution, debug=False)
 
     # Compute the log Bayes Factor
     evidence = 10 * np.log10(bayes_factor)
@@ -278,7 +282,7 @@ def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E
     # Compute the significance level
     significance_level = 1 - (10 ** (-evidence/10))
 
-    return evidence, significance_level, error_bf
+    return evidence, significance_level
 
 def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda2=1.0, p=0.5, debug=False, resolution=20):
     # Compute the Bayes Factor for the linear case

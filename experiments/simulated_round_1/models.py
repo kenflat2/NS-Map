@@ -57,16 +57,20 @@ def generate_logistic():
 
     r = model_params["param_base"]
     observation_noise = model_params["obs_noise"]
+    process_noise = model_params["process_noise"]
     tlen = model_params["time_series_length"]
 
     ts = np.zeros(tlen)
     ts[0] = rand.uniform(0, 1)
 
     for i in range(tlen-1):
+        t = i / (tlen - 1)
         x = r * ts[i] * (1 - ts[i])
-        ts[i+1] = x
+        u = np.log(x / (1 - x))
+        z = rand.normal(0, process_noise)
+        ts[i+1] = 1 / (1 + np.exp(z - u))
 
-    return ts[:,None] + rand.normal(0, observation_noise, tlen)[:, None]
+    return standardize(ts[:,None]) + rand.normal(0, observation_noise, tlen)[:, None]
 
 def generate_logistic_nonstat():
     model_params = params["experiments"][3]["parameters"]
@@ -74,6 +78,7 @@ def generate_logistic_nonstat():
     r_base = model_params["nonstat_param_base"]
     r_slope = model_params["nonstat_param_slope"]
     observation_noise = model_params["obs_noise"]
+    process_noise = model_params["process_noise"]
     tlen = model_params["time_series_length"]
 
     r = lambda t: r_base + r_slope * t
@@ -84,9 +89,11 @@ def generate_logistic_nonstat():
     for i in range(tlen-1):
         t = i / (tlen - 1)
         x = r(t) * ts[i] * (1 - ts[i])
-        ts[i+1] = x
+        u = np.log(x / (1 - x))
+        z = rand.normal(0, process_noise)
+        ts[i+1] = 1 / (1 + np.exp(z - u))
 
-    return ts[:,None] + rand.normal(0, observation_noise, tlen)[:, None]
+    return standardize(ts[:,None]) + rand.normal(0, observation_noise, tlen)[:, None]
 
 def FoodChainP(xi, t, b1):
     (x,y,z)=xi

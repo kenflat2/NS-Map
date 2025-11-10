@@ -44,10 +44,11 @@ def nonstationary_test_experiment(f, filename, experiment_params):
 
     results = []
 
+
     for _ in range(N_replicates):
         system = f()
 
-        evidence, significance_level, bayes_factor_error = nt.nonstationarity_test(
+        evidence, significance_level, bayes_factor_error, best_params = nt.nonstationarity_test(
             (system, t, tau),
             theta_range=experiment_params["theta_range"],
             delta_range=experiment_params["delta_range"],
@@ -55,8 +56,19 @@ def nonstationary_test_experiment(f, filename, experiment_params):
             lambda1=params["lambda1"],
             lambda2=params["lambda2"],
             p=params["p"],
-            resolution=resolution
+            resolution=resolution,
+            return_best_params=True
         )
+
+        best_theta, best_delta, best_E = best_params
+
+        # Compute prediction skill (R^2) for best parameters
+        Xr = system
+        Xemb, Y, tx = ns.delayEmbed(Xr, best_E, tau, t=t)
+        Yhat = ns.leaveOneOut(Xemb, Y, tx, best_theta, best_delta)
+        ss_res = np.sum((Y.flatten() - Yhat.flatten())**2)
+        ss_tot = np.sum((Y.flatten() - np.mean(Y))**2)
+        prediction_skill = 1 - ss_res / ss_tot if ss_tot > 0 else np.nan
 
         evidence_linear, significance_level_linear, bayes_factor_error_linear = nt.nonstationarity_test_linear(
             (system, t, tau),
@@ -80,7 +92,8 @@ def nonstationary_test_experiment(f, filename, experiment_params):
 
         row = [evidence, significance_level, bayes_factor_error,
                evidence_linear, significance_level_linear, bayes_factor_error_linear,
-               posterior_weighted_theta, posterior_weighted_delta]
+               posterior_weighted_theta, posterior_weighted_delta,
+               best_theta, best_delta, best_E, prediction_skill]
 
         write_to_file(filename, row)
 
