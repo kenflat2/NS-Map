@@ -10,7 +10,7 @@ import numpy as np
 # from mpl_toolkits.mplot3d import Axes3D
 from experiments.simulated_round_1.models import *
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
-from src.NonstationarityTest import marginalize_likelihood_1d, marginalize_likelihood_2d
+from src.NonstationarityTest import marginalize_likelihood_1d, marginalize_likelihood_2d, marginalize_likelihood_1d_trapezoidal, 
 from src.NonstationarityTest import prior_E
 import pickle
 
@@ -66,12 +66,13 @@ if __name__ == "__main__":
             data_E = (data[0], data[1], E, data[2])
 
             # Marginalize the likelihood for SMap (null)
-            marginal_likelihood_s[E], marginal_error_s[E] = marginalize_likelihood_1d(data_E, theta_range, lambda1)
+            # marginal_likelihood_s[E], marginal_error_s[E] = marginalize_likelihood_1d(data_E, theta_range, lambda1)
+            marginal_likelihood_s[E], marginal_error_s[E] = marginalize_likelihood_1d_trapezoidal(data_E, theta_range, lambda1)
 
             # Marginalize the likelihood for NSMap
             marginal_likelihood_ns[E], marginal_error_ns[E] = marginalize_likelihood_2d(data_E, theta_range, delta_range, lambda1, lambda2)
 
         stuff_dict[name] = (series, t, marginal_likelihood_s, marginal_likelihood_ns)
-    
-    with open("stuff_dict.pkl", "wb") as f:
+
+    with open(os.path.join(experiment_directory, "stuff_dict.pkl"), "wb") as f:
         pickle.dump(stuff_dict, f)

@@ -40,7 +40,7 @@ def generate_linear():
     x0 = rand.random(1)[0] * 2 * np.pi
     time_series = np.sin(theta(np.arange(time_series_length)) + x0) * np.sqrt(2)
     obs_noise = rand.normal(0, model_params["obs_noise"], time_series_length)
-    return time_series + obs_noise
+    return (time_series + obs_noise)[:, None]
 
 def generate_linear_nonstat():
     model_params = params["experiments"][1]["parameters"]
@@ -50,7 +50,7 @@ def generate_linear_nonstat():
     x0 = rand.random(1)[0] * 2 * np.pi
     time_series = np.sin(theta(np.arange(time_series_length)) + x0) * np.sqrt(2)
     obs_noise = rand.normal(0, model_params["obs_noise"], time_series_length)
-    return time_series + obs_noise
+    return (time_series + obs_noise)[:, None]
 
 def generate_logistic():
     model_params = params["experiments"][2]["parameters"]

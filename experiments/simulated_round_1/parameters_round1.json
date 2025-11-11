@@ -7,8 +7,8 @@
                 "obs_noise" : 0.1,
                 "period" : 12,
                 "time_series_length": 200,
-                "theta_range" : [0.0, 150.0],
-                "delta_range" : [0.0, 150.0]
+                "theta_range" : [0.0, 100.0],
+                "delta_range" : [0.0, 100.0]
             }
         },
         {
@@ -20,8 +20,8 @@
                 "period" : 12,
                 "obs_noise" : 0.1,
                 "time_series_length": 200,
-                "theta_range" : [0.0, 150.0],
-                "delta_range" : [0.0, 150.0]
+                "theta_range" : [0.0, 100.0],
+                "delta_range" : [0.0, 100.0]
             }
         },
         {
