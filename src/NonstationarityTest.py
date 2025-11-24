@@ -211,7 +211,7 @@ def marginalize_likelihood_E(marginal_likelihood_func, data, param_range, lambda
         marginal_error += error
     return marginal_likelihood, marginal_error
 
-def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5, debug=False, resolution=40):
+def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, lambda2=1.0, p=0.5, debug=False, resolution=40, return_best_params=False):
 
     """
     Compute the Bayes Factor between stationary and nonstationary models.
@@ -254,8 +254,15 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
     marginal_smap /= normalization
 
     bayes_factor = marginal_nsmap / marginal_smap
+
     if debug:
         return bayes_factor, marginal_smap, marginal_nsmap
+    elif return_best_params:
+        best_idx_ns = np.unravel_index(np.argmax(post_grid_nsmap), post_grid_nsmap.shape)
+        best_E = E_vals[best_idx_ns[0]]
+        best_theta = theta_vals[best_idx_ns[1]]
+        best_delta = delta_vals[best_idx_ns[2]]
+        return bayes_factor, (best_theta, best_delta, best_E)
     else:
         return bayes_factor
 
@@ -272,9 +279,12 @@ def compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=1.0, l
 #   - log_bayes_factor: log of the Bayes Factor between stationary and nonstationary model (float)
 #   - significance_level: significance level of the test (float)
 #   - error_bf: error estimate for the Bayes Factor (float)
-def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, lambda2=1.0, p=0.5, resolution = 40):
+def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E_range=(0, 8), lambda1=1.0, lambda2=1.0, p=0.5, resolution = 40, return_best_params=False):
     # Compute the Bayes Factor
-    bayes_factor = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=lambda1, lambda2=lambda2, p=p, resolution=resolution, debug=False)
+    if return_best_params:
+        bayes_factor, best_params = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=lambda1, lambda2=lambda2, p=p, resolution=resolution, debug=False, return_best_params=return_best_params)
+    else:
+        bayes_factor = compute_bayes_factor(data, theta_range, delta_range, E_range, lambda1=lambda1, lambda2=lambda2, p=p, resolution=resolution, debug=False, return_best_params=return_best_params)
 
     # Compute the log Bayes Factor
     evidence = 10 * np.log10(bayes_factor)
@@ -282,61 +292,70 @@ def nonstationarity_test(data, theta_range=(0.0, 4.0), delta_range=(0.0, 4.0), E
     # Compute the significance level
     significance_level = 1 - (10 ** (-evidence/10))
 
+    if return_best_params:
+        return evidence, significance_level, best_params
+    
     return evidence, significance_level
 
-def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda2=1.0, p=0.5, debug=False, resolution=20):
-    # Compute the Bayes Factor for the linear case
-    embedding_dimensions = np.arange(E_range[0], E_range[1])
+def compute_bayes_factor_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda2=1.0, p=0.5, debug=False, resolution=20, return_best_params=False):
+    # Use _build_log_likelihood_grid to build posterior grids for linear case
+    Xr, tx, tau = data
+    E_vals = np.arange(E_range[0], E_range[1])
+    delta_vals = np.linspace(delta_range[0], delta_range[1], resolution)
+    theta_vals = np.array([0])  # Linear case: theta=0
 
-    marginal_likelihood_s = np.zeros(E_range[1] - E_range[0])
-    marginal_likelihood_ns = np.zeros(E_range[1] - E_range[0])
-    marginal_error_s = np.zeros(E_range[1] - E_range[0])
-    marginal_error_ns = np.zeros(E_range[1] - E_range[0])
+    # Nonstationary: theta=0, delta varies
+    log_lik_ns, E_grid, _, delta_grid = _build_log_likelihood_grid(Xr, tx, (E_range[0], E_range[1]-1), theta_vals, delta_vals, tau)
+    # Stationary: theta=0, delta=0
+    log_lik_s, E_grid_s, _, _ = _build_log_likelihood_grid(Xr, tx, (E_range[0], E_range[1]-1), theta_vals, [0], tau, delta_is_zero=True)
 
-    for idx, E in enumerate(embedding_dimensions):
-        data_E = (data[0], data[1], E, data[2])
+    # Priors
+    prior_E_vals = np.array([prior_E(E, p) for E in E_vals])
+    prior_delta_vals = np.array([prior_1d(dl, lambda2) for dl in delta_vals])
+    prior_grid_ns = prior_E_vals[:, None] * prior_delta_vals[None, :]
+    prior_grid_s = prior_E_vals
 
-        # Stationary: theta=0, delta=0
-        marginal_likelihood_s[idx] = likelihood(data_E, 0, 0)
-        marginal_error_s[idx] = 0  # No integration, so error is zero
+    # Numerical stability
+    max_log_likelihood = max(np.max(log_lik_ns), np.max(log_lik_s))
 
-        # Nonstationary: theta=0, marginalize over delta
-        # def likelihood_linear(delta, data_E, lambda2):
-        #     return likelihood(data_E, 0, delta) * prior_1d(delta, lambda2)
-        
-        integral, error = marginalize_likelihood_1d_trapezoidal(data_E, delta_range, lambda_=lambda2, integrand=posterior_1d_linear, resolution=resolution)
+    # Posterior grids
+    post_grid_ns = np.exp(log_lik_ns.squeeze() - max_log_likelihood) * prior_grid_ns
+    post_grid_s = np.exp(log_lik_s.squeeze() - max_log_likelihood) * prior_grid_s
 
-        """
-        integral, error = quad(
-            integrand,
-            delta_range[0], delta_range[1],
-            epsrel=INTEGRATION_TOL, epsabs=INTEGRATION_TOL
-        )
-        """
+    # Marginalize
+    marginal_ns = np.trapz(post_grid_ns, x=delta_vals, axis=1)
+    marginal_ns = np.sum(marginal_ns)
+    marginal_s = np.sum(post_grid_s)
 
-        marginal_likelihood_ns[idx] = integral
-        marginal_error_ns[idx] = error
+    # Normalize
+    normalization = marginal_ns + marginal_s
+    if normalization == 0:
+        normalization = 1e-12
+    marginal_ns /= normalization
+    marginal_s /= normalization
 
-    marginal_likelihood_s = np.dot(marginal_likelihood_s, prior_E(embedding_dimensions, p))
-    marginal_error_s = np.sum(marginal_error_s)
-    marginal_likelihood_ns = np.dot(marginal_likelihood_ns, prior_E(embedding_dimensions, p))
-    marginal_error_ns = np.sum(marginal_error_ns)
+    bayes_factor = marginal_ns / marginal_s
 
-    # Compute the Bayes Factor
-    bayes_factor = marginal_likelihood_ns / marginal_likelihood_s
-    error_bf = marginal_error_s / marginal_likelihood_s + marginal_error_ns / marginal_likelihood_ns
     if debug:
-        return bayes_factor, error_bf, marginal_likelihood_s, marginal_error_s, marginal_likelihood_ns, marginal_error_ns
+        return bayes_factor, marginal_s, marginal_ns
+    elif return_best_params:
+        # Find the index of the maximum posterior in the NS grid
+        best_idx = np.unravel_index(np.argmax(post_grid_ns), post_grid_ns.shape)
+        best_E = E_vals[best_idx[0]]
+        best_delta = delta_vals[best_idx[1]]
+        return bayes_factor, (best_delta, best_E)
     else:
-        # Return the Bayes Factor and error estimate
-        return bayes_factor, error_bf
+        return bayes_factor
 
 # Function to perform the nonstationarity test with autoregressive model structure
 # Meant to emulate classical nonstationarity tests like Dickey-Fuller
 # Inputs:
-def nonstationarity_test_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda2=1.0, p=0.5, resolution=20):
+def nonstationarity_test_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), lambda2=1.0, p=0.5, resolution=20, return_best_params=False):
     # Compute the Bayes Factor for the linear case
-    bayes_factor, error_bf = compute_bayes_factor_linear(data, delta_range=delta_range, E_range=E_range, lambda2=lambda2, p=p, debug=False, resolution=resolution)
+    if return_best_params:
+        bayes_factor, best_params = compute_bayes_factor_linear(data, delta_range=delta_range, E_range=E_range, lambda2=lambda2, p=p, debug=False, resolution=resolution, return_best_params=return_best_params)
+    else:
+        bayes_factor = compute_bayes_factor_linear(data, delta_range=delta_range, E_range=E_range, lambda2=lambda2, p=p, debug=False, resolution=resolution)
 
     # Compute the log Bayes Factor
     evidence = 10 * np.log10(bayes_factor)
@@ -344,4 +363,7 @@ def nonstationarity_test_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), la
     # Compute the significance level
     significance_level = 1 - (10 ** (-evidence/10))
 
-    return evidence, significance_level, error_bf
+    if return_best_params:
+        return evidence, significance_level, best_params
+    
+    return evidence, significance_level
