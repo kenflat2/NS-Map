@@ -1,0 +1,14 @@
+{
+  "data_csv": "datasets/newport_aggregated_series.csv",
+  "output_dir": "results/newport_line_multiwindow",
+  "tau": 3,
+  "h": 0,
+  "E_range" : [0, 10],
+  "lambda1" : 1e-2,
+  "lambda2" : 1e-2,
+  "p" : 0.5,
+  "N_replicates": 50,
+  "resolution": 20,
+  "theta_range": [0.0, 50.0],
+  "delta_range": [0.0, 50.0]
+}

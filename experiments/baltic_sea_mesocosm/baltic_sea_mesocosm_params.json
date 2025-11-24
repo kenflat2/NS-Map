@@ -11,6 +11,6 @@
   "p" : 0.5,
   "N_replicates": 50,
   "resolution": 20,
-  "theta_range": [0.0, 150.0],
-  "delta_range": [0.0, 20.0]
+  "theta_range": [0.0, 50.0],
+  "delta_range": [0.0, 50.0]
 }

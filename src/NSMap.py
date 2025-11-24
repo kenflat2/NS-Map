@@ -166,7 +166,9 @@ def logLikelihood(X, Y, tx, theta, delta, returnSeries=False):
     Yhat = leaveOneOut(X, Y, tx, theta, delta)
     
     k = dofestimation(X, Y, tx, theta, delta)
-    mean_squared_residuals = np.sum((Y-Yhat)**2) / (n-k)
+    denom = max(n - k, 1e-8)
+    mean_squared_residuals = np.sum((Y-Yhat)**2) / denom
+    mean_squared_residuals = max(mean_squared_residuals, 1e-12)
 
     lnL = (-n/2)*(np.log(mean_squared_residuals) + np.log(2*np.pi) + 1 )
 
