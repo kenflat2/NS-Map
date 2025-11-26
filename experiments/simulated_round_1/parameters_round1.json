@@ -55,11 +55,11 @@
             "parameters": {
                 "nonstat_param": 4.0,
                 "obs_noise" : 0.1,
-                "time_series_length": 200,
+                "time_series_length": 400,
                 "reduction": 256,
                 "settling_time": 10000,
                 "time_per_step" : 10,
-                "theta_range" : [0.0, 7.0],
+                "theta_range" : [0.0, 14.0],
                 "delta_range" : [0.0, 7.0]
             }
         },
@@ -70,11 +70,11 @@
                 "nonstat_param_base": 3.0,
                 "nonstat_param_slope": 4.0,
                 "obs_noise" : 0.1,
-                "time_series_length": 200,
+                "time_series_length": 400,
                 "reduction": 256,
                 "settling_time": 10000,
                 "time_per_step" : 10,
-                "theta_range" : [0.0, 7.0],
+                "theta_range" : [0.0, 14.0],
                 "delta_range" : [0.0, 7.0]
             }
         }
@@ -84,6 +84,6 @@
     "lambda2" : 1e-2,
     "p" : 0.368,
     "tau" : 1,
-    "N_replicates": 50,
+    "N_replicates": 100,
     "resolution": 20
 }
