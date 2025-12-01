@@ -1,7 +1,6 @@
 {
-  "data_csv": "datasets/newport_aggregated_series.csv",
-  "output_dir": "results/newport_line_multiwindow",
-  "tau": 3,
+  "output_dir": "results/portal_rodent_analysis",
+  "tau": 2,
   "h": 0,
   "E_range" : [0, 10],
   "lambda1" : 1e-2,

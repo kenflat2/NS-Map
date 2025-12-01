@@ -10,7 +10,12 @@ from scipy.integrate import quad
 #   Results
 #       x with mean subtracted and standard deviation of 1
 def standardize(x):
-    return (x - np.mean(x, axis=0, where=np.isfinite(x))) / np.std(x, axis=0, where=np.isfinite(x))
+    mean = np.mean(x, axis=0, where=np.isfinite(x))
+    std = np.std(x, axis=0, where=np.isfinite(x))
+    # If std is zero or NaN, return zeros
+    if not np.isfinite(std) or std == 0:
+        return np.zeros_like(x)
+    return (x - mean) / std
 
 # Create a delay embeddding vector from a given UNIVARIATE time series.
 #   Parameters

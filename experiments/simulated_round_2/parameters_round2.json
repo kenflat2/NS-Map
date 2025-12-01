@@ -26,19 +26,19 @@
                 "default_length": 400,
                 "default_obs_noise": 0.1,
                 "default_process_noise": 0.02,
-                "reduction": 256,
+                "reduction": 4,
                 "settling_time": 10000,
                 "time_per_step" : 10
             }
         }
     ],
-    "theta_range" : [0.0, 10.0],
+    "theta_range" : [0.0, 15.0],
     "delta_range" : [0.0, 20.0],
-    "E_range" : [0, 5],
+    "E_range" : [0, 7],
     "lambda1" : 1e-2,
     "lambda2" : 1e-2,
     "p" : 0.368,
     "tau" : 1,
-    "N_replicates": 50,
+    "N_replicates": 100,
     "resolution": 20
 }
