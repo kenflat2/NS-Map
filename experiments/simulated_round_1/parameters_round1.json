@@ -55,10 +55,11 @@
             "parameters": {
                 "nonstat_param": 4.0,
                 "obs_noise" : 0.1,
+                "process_noise": 0.0,
                 "time_series_length": 400,
-                "reduction": 4,
+                "reduction": 256,
                 "settling_time": 10000,
-                "time_per_step" : 10,
+                "time_per_step" : 4,
                 "theta_range" : [0.0, 14.0],
                 "delta_range" : [0.0, 7.0]
             }
@@ -69,11 +70,12 @@
             "parameters": {
                 "nonstat_param_base": 3.0,
                 "nonstat_param_slope": 4.0,
-                "obs_noise" : 1.0,
+                "obs_noise" : 0.1,
+                "process_noise": 0.0,
                 "time_series_length": 400,
-                "reduction": 4,
+                "reduction": 256,
                 "settling_time": 10000,
-                "time_per_step" : 10,
+                "time_per_step" : 4,
                 "theta_range" : [0.0, 14.0],
                 "delta_range" : [0.0, 7.0]
             }

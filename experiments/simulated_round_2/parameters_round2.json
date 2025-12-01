@@ -26,9 +26,9 @@
                 "default_length": 400,
                 "default_obs_noise": 0.1,
                 "default_process_noise": 0.02,
-                "reduction": 4,
+                "reduction": 256,
                 "settling_time": 10000,
-                "time_per_step" : 10
+                "time_per_step" : 4
             }
         }
     ],

@@ -362,7 +362,7 @@ def nonstationarity_test_linear(data, delta_range=(0.0, 4.0), E_range=(0, 8), la
     evidence = 10 * np.log10(bayes_factor)
 
     # Compute the significance level
-    significance_level = 1 - (10 ** (-evidence/10))
+    significance_level = bayes_factor / (bayes_factor + 1)
 
     if return_best_params:
         return evidence, significance_level, best_params

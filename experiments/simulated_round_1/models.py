@@ -117,6 +117,7 @@ def generate_food_chain():
     tlen = model_params["time_series_length"]
     b1_base = model_params["nonstat_param"]
     observation_noise = model_params["obs_noise"]
+    process_noise = model_params['process_noise']
 
     settlingTime = model_params["settling_time"]
     end = model_params["time_per_step"] * tlen
@@ -149,14 +150,15 @@ def generate_food_chain_nonstat():
     b1_base = model_params["nonstat_param_base"]
     b1_trend = model_params["nonstat_param_slope"]
     observation_noise = model_params["obs_noise"]
+    process_noise = model_params['process_noise']
 
     settlingTime = model_params["settling_time"]
     end = model_params["time_per_step"] * tlen
     reduction = model_params["reduction"]
 
-    b1 = lambda t: b1_base + b1_trend * t / end
+    b1 = lambda t: b1_base + (tlen / tlen) * b1_trend * t / end
 
-    x0 = np.random.uniform(0, 1, 3)
+    x0 = np.ones(3)
 
     if settlingTime > 0:
         tSettle = np.arange(0,settlingTime, step=end/(reduction*tlen))
@@ -169,7 +171,7 @@ def generate_food_chain_nonstat():
     ts[0] = x0
 
     for i in range(tlen-1):
-        ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1]
+        ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1] * np.exp(rand.normal(0,process_noise))
 
     return standardize(ts[:, 0, None]) + rand.normal(0, observation_noise, (tlen, 1))
     # return ts + rand.normal(0, observation_noise, (tlen, len(x0)))

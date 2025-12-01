@@ -136,7 +136,7 @@ def process_experiment(experiment):
 
 def run_experiments_parallel():
     # You can adjust the slice below to control which experiments to run
-    experiments_to_run = params["experiments"]
+    experiments_to_run = params["experiments"][4:]
     with ProcessPoolExecutor() as executor:
         futures = [executor.submit(process_experiment, experiment) for experiment in experiments_to_run]
         for future in futures:
