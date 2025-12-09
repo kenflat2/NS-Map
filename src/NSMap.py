@@ -175,14 +175,19 @@ def logLikelihood(X, Y, tx, theta, delta, returnSeries=False):
     mean_squared_residuals = np.sum((Y-Yhat)**2) / denom
     mean_squared_residuals = max(mean_squared_residuals, 1e-12)
 
+    # This is the unbiased log likelihood formula from the paper
     lnL = (-n/2)*(np.log(mean_squared_residuals) + np.log(2*np.pi) + 1 )
+
+    # In practice, we divide by n because n varies with different embedding dimensions
+    # and we want to compare log likelihoods across different embedding dimensions
+    lnL_avg = lnL / n
 
     # bic = BIC(lnL, k, n)
 
     if returnSeries:
-        return (lnL, Yhat)
+        return (lnL_avg, Yhat)
     else:
-        return lnL
+        return lnL_avg
 
     # temporary substitution for -BIC instead of unbiased lnL
     # if returnSeries:

@@ -176,7 +176,12 @@ def _build_log_likelihood_grid(Xr, tx, E_range, theta_range, delta_range, tau, d
         Xemb, Y, tx_ = ns.delayEmbed(Xr, E, tau, t=tx)
         for j, th in enumerate(theta_vals):
             for k, dl in enumerate(delta_vals):
+                # average log likelihood per data point
                 log_likelihoods[i, j, k] = ns.logLikelihood(Xemb, Y, tx_, th, dl)
+    # Normalize by shortest length to account for varying data sizes
+    Xemb, Y, tx_ = ns.delayEmbed(Xr, E_range[1], tau, t=tx)
+    shortest_len = len(Y)
+    log_likelihoods *= shortest_len
     return log_likelihoods, E_vals, theta_vals, delta_vals
 
 # Marginalize over E, theta, delta (NSMap)
