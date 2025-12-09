@@ -1,8 +1,8 @@
 {
-  "output_dir": "results/portal_rodent_analysis",
-  "tau": 2,
+  "output_dir": "results/portal_rodent_analysis_lower_E",
+  "tau": 1,
   "h": 0,
-  "E_range" : [0, 10],
+  "E_range" : [0, 3],
   "lambda1" : 1e-2,
   "lambda2" : 1e-2,
   "p" : 0.5,

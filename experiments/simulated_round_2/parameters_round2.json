@@ -21,11 +21,11 @@
                 "nonstat_param_base": 2.5,
                 "nonstat_param_slope": [0.0, 2.25, 4.5],
                 "obs_noise" : [0.0, 0.1, 0.2, 0.3],
-                "process_noise": [0.0, 0.02, 0.04],
+                "process_noise": [0.0, 0.03, 0.06],
                 "time_series_length": [100, 200, 400],
                 "default_length": 400,
                 "default_obs_noise": 0.1,
-                "default_process_noise": 0.02,
+                "default_process_noise": 0.0,
                 "reduction": 256,
                 "settling_time": 10000,
                 "time_per_step" : 4
