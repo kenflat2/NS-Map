@@ -87,11 +87,12 @@
     "N_replicates" : 50,
     "period" : 12,
     "obs_noise" : 0.1,
-    "theta_range" : [0.0, 4.0],
-    "delta_range" : [0.0, 4.0],
-    "E_range" : [0, 7],
-    "lambda1" : 1.0,
-    "lambda2" : 1.0,
+    "theta_range" : [0.0, 50.0],
+    "delta_range" : [0.0, 50.0],
+    "E_range" : [0, 10],
+    "lambda1" : 1e-2,
+    "lambda2" : 1e-2,
+    "resolution" : 20,
     "p" : 0.5,
     "tau" : 1
 }

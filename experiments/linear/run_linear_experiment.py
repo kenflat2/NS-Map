@@ -28,7 +28,7 @@ def nonstationary_test_experiment(f, filename):
                         theta_range=params["theta_range"],
                         delta_range=params["delta_range"], E_range=params["E_range"],
                         lambda1=params["lambda1"], lambda2=params["lambda2"],
-                        p=params["p"]))
+                        p=params["p"]), resolution=params["resolution"],)
                         for _ in range(int(params["N_replicates"]))])
 
     np.savetxt(f"{filename}.csv", results, fmt="%0.4f,%0.4f,%0.4f", header = "evidence, significance_level, bayes factor error")
