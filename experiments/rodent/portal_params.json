@@ -1,13 +1,12 @@
 {
-  "output_dir": "results/portal_rodent_analysis_E_normalized",
+  "output_dir": "results/portal_rodent_analysis_lower_E_normalized",
   "tau": 1,
   "h": 0,
-  "E_range" : [0, 10],
+  "E_range" : [0, 4],
   "lambda1" : 1e-2,
   "lambda2" : 1e-2,
   "p" : 0.5,
-  "N_replicates": 50,
   "resolution": 20,
-  "theta_range": [0.0, 50.0],
-  "delta_range": [0.0, 50.0]
+  "theta_range": [0.0, 50],
+  "delta_range": [0.0, 50]
 }

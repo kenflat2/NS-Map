@@ -74,7 +74,10 @@ def generate_food_chain(tlen, b1_base, b1_trend, observation_noise, process_nois
     ts = np.zeros((tlen, len(x0)))
     ts[0] = x0
 
-    for i in range(tlen-1):
-        ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1] * np.exp(rand.normal(0,process_noise))
+    process_noise_rescaled = 0.04 * process_noise / 0.1
 
+    for i in range(tlen-1):
+        ts[i+1] = odeint(FoodChainP, ts[i], t[i*reduction:(i+1)*reduction], args=(b1,))[-1] * np.exp(rand.normal(0,process_noise_rescaled))
+
+    # return ts[:, 0, None] + rand.normal(0, observation_noise, (tlen, 1))
     return standardize(ts[:, 0, None]) + rand.normal(0, observation_noise, (tlen, 1))

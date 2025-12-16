@@ -84,7 +84,7 @@
         }
     ],
     "length" : 200,
-    "N_replicates" : 50,
+    "N_replicates" : 2,
     "period" : 12,
     "obs_noise" : 0.1,
     "theta_range" : [0.0, 50.0],

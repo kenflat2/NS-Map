@@ -1,9 +1,9 @@
 {
   "data_csv": "datasets/newport_aggregated_series.csv",
-  "output_dir": "results/newport_line_multiwindow_E_normalized",
+  "output_dir": "results/newport_line_multiwindow_lower_E_normalized",
   "tau": 1,
   "h": 0,
-  "E_range" : [0, 10],
+  "E_range" : [0, 4],
   "lambda1" : 1e-2,
   "lambda2" : 1e-2,
   "p" : 0.5,

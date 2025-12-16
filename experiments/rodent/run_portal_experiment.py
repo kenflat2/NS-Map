@@ -49,7 +49,8 @@ def process_species(species, params, df, df_trapping, lengths, maxLen, output_di
             ts_chunk = ns.standardize(ts[start:length+start])
             t_chunk = np.linspace(0, 1, length)
             data = (ts_chunk, t_chunk, tau)
-            evidence, significance_level = nt.nonstationarity_test(
+
+            evidence, significance_level, best_params_ns = nt.nonstationarity_test(
                 data,
                 theta_range=params["theta_range"],
                 delta_range=params["delta_range"],
@@ -57,8 +58,12 @@ def process_species(species, params, df, df_trapping, lengths, maxLen, output_di
                 lambda1=params["lambda1"],
                 lambda2=params["lambda2"],
                 p=params["p"],
-                resolution=params["resolution"]
+                resolution=params["resolution"],
+                return_best_params=True
             )
+
+            best_theta_ns, best_delta_ns, best_E_ns = best_params_ns
+
             posterior_weighted_theta, posterior_weighted_delta = nse.compute_posterior_weighted_parameters(
                 data,
                 theta_range=params["theta_range"],
@@ -69,8 +74,16 @@ def process_species(species, params, df, df_trapping, lengths, maxLen, output_di
                 p=params["p"],
                 resolution=params["resolution"]
             )
+
+            # Compute prediction skill for best parameters
+            Xemb_ns, Y, tx = ns.delayEmbed(ts_chunk, best_E_ns, tau, t=t_chunk)
+            Yhat_ns = ns.leaveOneOut(Xemb_ns, Y, tx, best_theta_ns, best_delta_ns)
+            ss_res_ns = np.sum((Y.flatten() - Yhat_ns.flatten())**2)
+            ss_tot_ns = np.sum((Y.flatten() - np.mean(Y))**2)
+            prediction_skill_ns = 1 - ss_res_ns / ss_tot_ns if ss_tot_ns > 0 else np.nan
+
             with open(out_path, 'a') as f:
-                f.write(f"{int(length)},{int(start)},{evidence},{significance_level},{posterior_weighted_theta},{posterior_weighted_delta}\n")
+                f.write(f"{int(length)},{int(start)},{evidence},{significance_level},{posterior_weighted_theta},{posterior_weighted_delta},{prediction_skill_ns}\n")
             tally += 1
             print(f"{species}: {tally}")
 

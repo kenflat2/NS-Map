@@ -3,7 +3,7 @@ import sys
 
 # Dynamically set the root directory
 root = os.path.dirname(os.path.abspath(__name__))  # Current file's directory
-sys.path.append(root)
+experiment_directory = os.path.join(root, "experiments", "linear")
 # experiment_directory = os.path.join(ROOT_DIR)
 
 import json
@@ -14,11 +14,16 @@ from pathlib import Path
 from utils.TimeseriesToolkit import standardize
 
 
-experiment_directory = "/experiments/linear/"
+# experiment_directory = "/experiments/linear/"
 
-print(root + "/parameters_linear.json")
+# print(root + "/parameters_linear.json")
 
-with open(root + "/parameters_linear.json", "r") as f:
+"""
+with open(os.path.join(experiment_directory, "parameters_linear.json"), "r") as f:
+    params = json.load(f)
+"""
+
+with open(os.path.join("parameters_linear.json"), "r") as f:
     params = json.load(f)
 
 ## MODELS TO BE TESTED ##
