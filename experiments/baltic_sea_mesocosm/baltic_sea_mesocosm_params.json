@@ -1,6 +1,6 @@
 {
   "data_csv": "datasets/baltic_sea_mesocosm_transformed.csv",
-  "output_dir": "results/baltic_sea_multiwindow",
+  "output_dir": "results/baltic_sea_multiwindow_lower_E_normalized",
   "year_steps": 27,
   "tau": 1,
   "h": 0,

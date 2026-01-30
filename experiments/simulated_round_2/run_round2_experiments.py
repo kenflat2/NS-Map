@@ -104,7 +104,7 @@ def nonstationary_test_experiment_parallel(f, experiment_params, filename):
 
 if __name__ == "__main__":
     # Run the simulation for the stationary model
-    for experiment in params["experiments"][1:]:
+    for experiment in params["experiments"]:
         dynamic_function_name = "generate_" + experiment["name"]
         dynamic_function = getattr(experiments.simulated_round_2.nonlinear_models, dynamic_function_name)
         nonstationary_test_experiment_parallel(dynamic_function, experiment["parameters"], experiment["name"])
