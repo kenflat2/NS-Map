@@ -70,10 +70,13 @@ def run_experiment():
     filename = params["data_csv"]
     year_steps = params["year_steps"]
     output_dir = params["output_dir"]
+    # Create output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     df = pd.read_csv(filename, encoding="utf-8", na_filter=False)
     table = df.to_numpy()
     maxLen = table[:,0].shape[0]
-    lengths = np.arange(year_steps*4, maxLen+1, step=year_steps)
+    lengths = np.arange(year_steps*4, maxLen+1, step=year_steps)[::-1]
     species_list = list(df.columns[1:].to_numpy())
 
     with ProcessPoolExecutor() as executor:
