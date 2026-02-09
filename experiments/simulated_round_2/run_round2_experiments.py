@@ -13,13 +13,13 @@ root = os.path.dirname(os.path.abspath(__file__))
 # experiment_directory = os.path.join(root, "experiments", "simulated_round_2/")
 sys.path.append(root)
 
-with open(os.path.join(root, "parameters_round2_calibrated_process_noise2.json"), "r") as f:
+with open(os.path.join(root, "parameters_round2.json"), "r") as f:
     params = json.load(f)
 
 ## Simulation Code ##
 
 def write_to_file(filename, rows):
-    csv_path = os.path.join(root, f"{filename}_calibrated_process_noise2.csv")
+    csv_path = os.path.join(root, f"{filename}.csv")
     with open(csv_path, "a") as f_csv:
         writer = csv.writer(f_csv)
         writer.writerows(rows)
