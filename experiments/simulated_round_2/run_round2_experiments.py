@@ -13,7 +13,7 @@ root = os.path.dirname(os.path.abspath(__file__))
 # experiment_directory = os.path.join(root, "experiments", "simulated_round_2/")
 sys.path.append(root)
 
-with open(os.path.join(root, "parameters_round2_calibrated_process_noise.json"), "r") as f:
+with open(os.path.join(root, "parameters_round2_calibrated_process_noise2.json"), "r") as f:
     params = json.load(f)
 
 ## Simulation Code ##
