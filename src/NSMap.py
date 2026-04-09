@@ -172,7 +172,6 @@ def logLikelihood(X, Y, tx, theta, delta, returnSeries=False):
     
     k = dofestimation(X, Y, tx, theta, delta)
     denom = max(n - k, 1e-8)
-    print(f"theta: {theta}, delta: {delta}, dof: {k}")
 
     mean_squared_residuals = np.sum((Y-Yhat)**2) / denom
     mean_squared_residuals = max(mean_squared_residuals, 1e-12)
